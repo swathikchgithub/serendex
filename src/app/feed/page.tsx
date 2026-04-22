@@ -1,0 +1,131 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { RecommendationCard } from "@/components/RecommendationCard";
+import { AgentTracePanel } from "@/components/AgentTrace";
+import type { RecommendationResponse } from "@/types";
+
+export default function FeedPage() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get("q") ?? "";
+  const [data, setData] = useState<RecommendationResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showTrace, setShowTrace] = useState(false);
+
+  const fetchRecommendations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
+      localStorage.setItem("serendex_uid", userId);
+
+      const res = await fetch(`/api/recommendations?user_id=${userId}&q=${encodeURIComponent(query)}`);
+      const json: RecommendationResponse = await res.json();
+      setData(json);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [query]);
+
+  useEffect(() => {
+    if (query) fetchRecommendations();
+  }, [query, fetchRecommendations]);
+
+  const handleEvent = async (videoId: string, type: "click" | "skip") => {
+    const userId = localStorage.getItem("serendex_uid");
+    if (!userId) return;
+    await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, video_id: videoId, event_type: type }),
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-black/80 backdrop-blur border-b border-white/10 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <h1 className="font-black text-xl">
+            SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>
+          </h1>
+          <div className="flex items-center gap-4">
+            {data && (
+              <span className="text-white/30 text-xs font-mono">
+                {data.meta.total_latency_ms}ms · {data.recommendations.length} results
+              </span>
+            )}
+            <button
+              onClick={() => setShowTrace(!showTrace)}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${showTrace ? "border-violet-500/50 bg-violet-500/10 text-violet-300" : "border-white/10 text-white/40 hover:text-white/60"}`}
+            >
+              {showTrace ? "Hide" : "Show"} Agent Trace
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Query header */}
+        <div className="mb-8">
+          <p className="text-white/30 text-sm">Results for</p>
+          <h2 className="text-2xl font-bold text-white mt-1">{query}</h2>
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="flex gap-2">
+              {["🧠", "⚡", "👤", "📈", "🛡️", "💬"].map((icon, i) => (
+                <span
+                  key={i}
+                  className="text-2xl animate-bounce"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  {icon}
+                </span>
+              ))}
+            </div>
+            <p className="text-white/40 text-sm">Agents working in parallel...</p>
+          </div>
+        )}
+
+        {/* Content */}
+        {!loading && data && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Agent Trace Panel */}
+            {showTrace && (
+              <div className="lg:col-span-3">
+                <AgentTracePanel
+                  traces={data.meta.traces}
+                  orchestratorReasoning={data.meta.orchestrator_reasoning}
+                  totalLatency={data.meta.total_latency_ms}
+                  diversityScore={data.meta.diversity_score}
+                />
+              </div>
+            )}
+
+            {/* Recommendations grid */}
+            <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {data.recommendations.map((video) => (
+                <RecommendationCard
+                  key={video.video_id}
+                  video={video}
+                  onEvent={(type) => handleEvent(video.video_id, type)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && !data && (
+          <div className="text-center py-24 text-white/20">
+            Enter a topic above to discover videos
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
