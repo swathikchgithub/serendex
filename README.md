@@ -2,7 +2,7 @@
 
 **Agentic YouTube Discovery Engine** — a multi-agent AI system that recommends videos the way a brilliant friend would, not just "similar to what you watched" but *reasoning about who you are, what you're missing, and what's rising right now.*
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/serendex)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/swathikchgithub/serendex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](./LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
 [![Powered by Claude](https://img.shields.io/badge/Powered%20by-Claude%20Sonnet-orange)](https://anthropic.com)
@@ -82,7 +82,7 @@ CONTENT ANALYSIS   USER PROFILING    TREND SCOUT
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/serendex.git
+git clone https://github.com/swathikchgithub/serendex.git
 cd serendex
 npm install
 ```
