@@ -23,80 +23,63 @@ export default function AboutPage() {
             How <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">SERENDEX</span> works
           </h1>
           <p className="text-xl text-white/50 leading-relaxed">
-            Standard recommendation algorithms optimize for watch time. We optimize for 
-            <span className="text-white"> understanding</span>, <span className="text-white">diversity</span>, and <span className="text-white">serendipity</span>.
+            SERENDEX is a multi-agent discovery engine. Unlike traditional algorithms that trap you in "filter bubbles," 
+            we use agentic reasoning to actively explore new horizons based on your latent interests.
           </p>
         </div>
 
-        {/* The Orchestrator Section */}
+        {/* AI Reasoning Section */}
         <section className="mb-32">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-block px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-bold mb-4 uppercase tracking-widest">
-                The Brain
-              </div>
-              <h2 className="text-3xl font-bold mb-6">The Orchestrator Agent</h2>
-              <p className="text-white/60 text-lg mb-6 leading-relaxed">
-                When you enter a search query, a central Orchestrator (powered by Claude 3.5) determines the best discovery strategy. 
-                It doesn't just search; it delegates work to specialized agents in parallel.
-              </p>
-              <ul className="space-y-4">
-                <li className="flex gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-xs text-white/40">1</div>
-                  <p className="text-white/80">Analyzes the search intent and user history.</p>
-                </li>
-                <li className="flex gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-xs text-white/40">2</div>
-                  <p className="text-white/80">Assigns "confidence weights" to different recommendation paths.</p>
-                </li>
-                <li className="flex gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-xs text-white/40">3</div>
-                  <p className="text-white/80">Merges results based on semantic relevance and trend velocity.</p>
-                </li>
-              </ul>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 aspect-square flex items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent"></div>
-              <div className="relative flex flex-col items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-r from-violet-500 to-cyan-500 flex items-center justify-center text-3xl shadow-2xl shadow-violet-500/20">🧠</div>
-                <div className="flex gap-2">
-                  <div className="w-12 h-1 bg-violet-500/20 rounded-full animate-pulse"></div>
-                  <div className="w-8 h-1 bg-cyan-500/20 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 w-full max-w-[240px] mt-4">
-                   <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px] text-white/40 text-center uppercase tracking-tighter">Content Agent</div>
-                   <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px] text-white/40 text-center uppercase tracking-tighter">Profiling Agent</div>
-                   <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px] text-white/40 text-center uppercase tracking-tighter">Trend Agent</div>
-                   <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px] text-white/40 text-center uppercase tracking-tighter">Guard Agent</div>
-                </div>
-              </div>
+          <div className="p-8 md:p-12 rounded-[40px] bg-white/5 border border-white/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 text-6xl opacity-10">🤖</div>
+            <h2 className="text-3xl font-bold mb-8">How we use AI</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+               <div>
+                  <h3 className="text-violet-400 font-bold mb-3 uppercase tracking-widest text-xs">The Reasoning Loop</h3>
+                  <p className="text-white/60 leading-relaxed mb-6">
+                    We use <strong>Claude 3.5</strong> as a reasoning engine. When you search, the AI doesn't just look for matches; it asks itself: 
+                    <em>"What concepts underpin this query? What is the user trying to learn?"</em>
+                  </p>
+                  <p className="text-white/60 leading-relaxed">
+                    This allows the system to perform <strong>multi-step discovery</strong>—searching for tutorials, then deep dives, then critical news—to build a complete picture of a topic for you.
+                  </p>
+               </div>
+               <div>
+                  <h3 className="text-cyan-400 font-bold mb-3 uppercase tracking-widest text-xs">Semantic Memory</h3>
+                  <p className="text-white/60 leading-relaxed mb-6">
+                    Using <strong>Voyage AI embeddings</strong> and <strong>pgvector</strong>, we convert video titles and transcripts into 1024-dimensional vectors.
+                  </p>
+                  <p className="text-white/60 leading-relaxed">
+                    This means if you search for "system design," we can find videos about "scalability" and "load balancing" even if they don't contain your exact search words.
+                  </p>
+               </div>
             </div>
           </div>
         </section>
 
         {/* The Specialized Agents */}
         <section className="mb-32">
-          <h2 className="text-3xl font-bold mb-12 text-center">Specialized Worker Agents</h2>
+          <h2 className="text-3xl font-bold mb-12 text-center">The Agentic Workflow</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:border-violet-500/30 transition-all group">
               <div className="text-3xl mb-6 group-hover:scale-110 transition-transform origin-left">⚡</div>
               <h3 className="text-xl font-bold mb-3">Content Analysis</h3>
               <p className="text-white/40 text-sm leading-relaxed">
-                Uses vector embeddings (Voyage AI) to understand the "meaning" of videos. It finds connections based on concepts, not just keywords.
+                LLM-driven analysis of video metadata to score candidates against your current knowledge level and search intent.
               </p>
             </div>
             <div className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-all group">
               <div className="text-3xl mb-6 group-hover:scale-110 transition-transform origin-left">👤</div>
               <h3 className="text-xl font-bold mb-3">User Profiling</h3>
               <p className="text-white/40 text-sm leading-relaxed">
-                Maintains a temporal interest graph in Redis. It tracks how your interests evolve over time to suggest what you'll want to learn next.
+                Maintains a temporal interest graph. It learns from your "skips" and "clicks" to refine your taste graph in real-time using Redis.
               </p>
             </div>
             <div className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:border-pink-500/30 transition-all group">
               <div className="text-3xl mb-6 group-hover:scale-110 transition-transform origin-left">📈</div>
               <h3 className="text-xl font-bold mb-3">Trend Scout</h3>
               <p className="text-white/40 text-sm leading-relaxed">
-                Monitors view velocity and social signals to detect rising topics before they hit the main YouTube algorithms.
+                Uses external signals to detect "Information Voids"—topics that are trending but not yet well-covered by your standard feed.
               </p>
             </div>
           </div>
@@ -105,28 +88,28 @@ export default function AboutPage() {
         {/* System Design Section */}
         <section className="mb-32">
           <div className="p-12 rounded-[40px] bg-gradient-to-b from-white/5 to-transparent border border-white/10">
-             <h2 className="text-3xl font-bold mb-4">System Architecture</h2>
-             <p className="text-white/40 mb-12">Built for low latency and high scalability on Vercel.</p>
+             <h2 className="text-3xl font-bold mb-4">Technical Infrastructure</h2>
+             <p className="text-white/40 mb-12">Architecture optimized for reasoning-heavy workloads.</p>
              
              <div className="space-y-12">
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                    <div className="flex-1">
-                      <h4 className="text-white font-bold mb-2">1. Vector Memory (Postgres + pgvector)</h4>
-                      <p className="text-white/40 text-sm">We store thousands of high-quality educational video embeddings in Neon Postgres. This allows for "semantic search" that is 100x more accurate than keyword matching.</p>
+                      <h4 className="text-white font-bold mb-2">Vector Storage</h4>
+                      <p className="text-white/40 text-sm">Neon Postgres with the pgvector extension for high-dimensional similarity searches at scale.</p>
                    </div>
                    <div className="flex-1">
-                      <h4 className="text-white font-bold mb-2">2. Temporal Cache (Upstash Redis)</h4>
-                      <p className="text-white/40 text-sm">User session data and recent events are stored in Redis for sub-millisecond access. This feeds the Profiling Agent's real-time reasoning.</p>
+                      <h4 className="text-white font-bold mb-2">Real-time Graph</h4>
+                      <p className="text-white/40 text-sm">Upstash Redis for millisecond-latency user profile updates and session management.</p>
                    </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                    <div className="flex-1">
-                      <h4 className="text-white font-bold mb-2">3. Explainable AI</h4>
-                      <p className="text-white/40 text-sm">Every recommendation is passed through an Explanation Agent (Sonnet 3.5) that writes a personalized reason why you might find it interesting.</p>
+                      <h4 className="text-white font-bold mb-2">Edge Orchestration</h4>
+                      <p className="text-white/40 text-sm">Built with Next.js and deployed on Vercel, parallelizing agent calls at the edge for maximum speed.</p>
                    </div>
                    <div className="flex-1">
-                      <h4 className="text-white font-bold mb-2">4. Diversity Guard</h4>
-                      <p className="text-white/40 text-sm">A final agentic layer checks the proposed list for "filter bubbles" and injects serendipitous content to keep your discoveries fresh.</p>
+                      <h4 className="text-white font-bold mb-2">Explainable Discovery</h4>
+                      <p className="text-white/40 text-sm">Every result is accompanied by a reasoning trace, explaining <em>why</em> the engine thought it was relevant to you.</p>
                    </div>
                 </div>
              </div>
@@ -135,10 +118,10 @@ export default function AboutPage() {
 
         {/* CTA */}
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-8">Ready to discover?</h2>
+          <h2 className="text-2xl font-bold mb-8 text-white/80">Experience agentic discovery today</h2>
           <Link 
             href="/"
-            className="inline-flex items-center justify-center bg-white text-black px-8 py-4 rounded-2xl font-bold hover:bg-white/90 transition-all"
+            className="inline-flex items-center justify-center bg-white text-black px-8 py-4 rounded-2xl font-bold hover:bg-white/90 transition-all shadow-xl shadow-white/5"
           >
             Go to Search
           </Link>
@@ -147,11 +130,12 @@ export default function AboutPage() {
 
       <footer className="border-t border-white/5 py-12 px-6 mt-20">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-white/30 text-sm">
-            © 2026 SERENDEX Agentic Discovery Engine
+          <div className="text-white/30 text-sm font-medium">
+            © 2026 SERENDEX
           </div>
-          <div className="text-white/20 text-[10px] uppercase tracking-widest font-mono">
-            Powered by Claude 3.5 & pgvector
+          <div className="flex gap-8 text-white/40 text-xs uppercase tracking-widest font-bold">
+            <a href="https://github.com/swathikchgithub/serendex" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub Project</a>
+            <a href="https://github.com/swathikchgithub/serendex#readme" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Documentation</a>
           </div>
         </div>
       </footer>
