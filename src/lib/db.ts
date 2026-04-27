@@ -1,8 +1,14 @@
 import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.POSTGRES_URL!);
+// Lazy init — only connects at runtime when POSTGRES_URL is available,
+// not during Next.js static build analysis.
+function getDb() {
+  if (!process.env.POSTGRES_URL) throw new Error("POSTGRES_URL is not set");
+  return neon(process.env.POSTGRES_URL);
+}
 
 export async function setupSchema(): Promise<void> {
+  const sql = getDb();
   await sql`CREATE EXTENSION IF NOT EXISTS vector`;
 
   await sql`
@@ -77,6 +83,7 @@ export async function upsertVideoEmbedding(
   embedding: number[],
   topics: string[]
 ): Promise<void> {
+  const sql = getDb();
   const embeddingStr = `[${embedding.join(",")}]`;
   await sql`
     INSERT INTO video_embeddings (video_id, title, description, tags, channel_id, embedding, topics)
@@ -96,6 +103,7 @@ export async function vectorSearch(
   topK = 20,
   excludeIds: string[] = []
 ): Promise<{ video_id: string; title: string; channel_id: string; similarity: number }[]> {
+  const sql = getDb();
   const embeddingStr = `[${embedding.join(",")}]`;
 
   type Row = { video_id: string; title: string; channel_id: string; similarity: number };
@@ -129,6 +137,7 @@ export async function saveAgentTrace(
   latencyMs: number,
   confidence: number
 ): Promise<void> {
+  const sql = getDb();
   await sql`
     INSERT INTO agent_traces (session_id, agent_name, input, output, reasoning, latency_ms, confidence)
     VALUES (
