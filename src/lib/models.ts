@@ -21,7 +21,8 @@ export function getModel(agent: "content" | "explanation", tier: ModelTier = "ec
     case "openrouter":
       return openrouter("anthropic/claude-3.5-sonnet");
     case "eco":
+      return openai("gpt-4o-mini");
     default:
-      return google("gemini-1.5-flash");
+      return google("gemini-1.5-flash-latest");
   }
 }
