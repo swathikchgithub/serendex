@@ -57,6 +57,31 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Model Selection Section */}
+        <section className="mb-32">
+          <h2 className="text-3xl font-bold mb-12 text-center">Choosing Your Intelligence</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
+              <h3 className="text-xl font-bold mb-4">The Selection Dropdown</h3>
+              <p className="text-white/60 mb-6">
+                In the top right of your feed, you'll find a model selector. This allows you to choose which AI model powers the <strong>Content Analysis</strong> and <strong>Explanation</strong> agents.
+              </p>
+              <ul className="space-y-4 text-sm text-white/50">
+                <li className="flex gap-3"><span className="text-white">🌱 Eco:</span> Optimized for speed and low cost (Gemini Flash / GPT-4o Mini).</li>
+                <li className="flex gap-3"><span className="text-white">⚡ Speed:</span> Sub-second response times using Groq's Llama 3 servers.</li>
+                <li className="flex gap-3"><span className="text-white">🧠 Pro:</span> Deepest reasoning via Claude 3.5 Sonnet or GPT-4o.</li>
+                <li className="flex gap-3"><span className="text-white">🌐 Open:</span> Access to open-source giants like DeepSeek V3 and R1 via OpenRouter.</li>
+              </ul>
+            </div>
+            <div className="p-8 rounded-3xl bg-gradient-to-br from-violet-500/10 to-cyan-500/10 border border-white/10 flex flex-col justify-center">
+              <h3 className="text-xl font-bold mb-4 italic">Pro Tip</h3>
+              <p className="text-white/70 leading-relaxed">
+                "Use <strong>DeepSeek R1</strong> for highly technical topics (like System Design or Physics). Its reasoning chain excels at breaking down complex educational concepts that simpler models might miss."
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* The Specialized Agents */}
         <section className="mb-32">
           <h2 className="text-3xl font-bold mb-12 text-center">The Agentic Workflow</h2>

@@ -66,9 +66,9 @@ function FeedContent() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-black/80 backdrop-blur border-b border-white/10 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="font-black text-xl">
+          <Link href="/" className="font-black text-xl hover:opacity-80 transition-opacity">
             SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>
-          </h1>
+          </Link>
           <div className="flex items-center gap-4">
             <select
               value={modelId}
