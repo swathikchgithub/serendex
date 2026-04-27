@@ -4,7 +4,7 @@ import { embedTexts, videoToText, cosineSimilarity } from "@/lib/embeddings";
 import { upsertVideoEmbedding, vectorSearch } from "@/lib/db";
 import type { Video, AgentTrace } from "@/types";
 
-const client = new Anthropic();
+function getClient() { return new Anthropic(); }
 
 const tools: Anthropic.Tool[] = [
   {
@@ -54,6 +54,7 @@ export async function runContentAnalysisAgent(
     ...userTopics,
   ].filter(Boolean).slice(0, 3).join(", ");
 
+  const client = getClient();
   const messages: Anthropic.MessageParam[] = [
     {
       role: "user",

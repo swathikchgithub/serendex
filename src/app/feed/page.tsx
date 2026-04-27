@@ -13,19 +13,27 @@ function FeedContent() {
   const query = searchParams.get("q") ?? "";
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showTrace, setShowTrace] = useState(false);
 
   const fetchRecommendations = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
       localStorage.setItem("serendex_uid", userId);
 
       const res = await fetch(`/api/recommendations?user_id=${userId}&q=${encodeURIComponent(query)}`);
       const json = await res.json();
-      if (json.recommendations) setData(json as RecommendationResponse);
+      if (!res.ok) {
+        setError(json.error ?? `Server error ${res.status}`);
+      } else if (json.recommendations) {
+        setData(json as RecommendationResponse);
+      } else {
+        setError("Unexpected response from recommendations API");
+      }
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -91,6 +99,16 @@ function FeedContent() {
               ))}
             </div>
             <p className="text-white/40 text-sm">Agents working in parallel...</p>
+          </div>
+        )}
+
+        {/* Error */}
+        {!loading && error && (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="text-red-400 text-4xl">⚠️</div>
+            <p className="text-red-400 font-semibold">Something went wrong</p>
+            <pre className="text-red-300/60 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 max-w-xl overflow-auto">{error}</pre>
+            <button onClick={fetchRecommendations} className="text-xs px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all mt-2">Retry</button>
           </div>
         )}
 

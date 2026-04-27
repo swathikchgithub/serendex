@@ -1,7 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ScoredVideo, UserProfile, AgentTrace } from "@/types";
 
-const client = new Anthropic();
 
 interface ExplanationResult {
   videos: ScoredVideo[];
@@ -35,6 +34,7 @@ ${videos.map((v, i) => `${i + 1}. "${v.title}" by ${v.channel} (scores: content=
 Respond with a JSON array (same order as input):
 [{"explanation": "...", "explanation_type": "..."}]`;
 
+  const client = new Anthropic();
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 2048,
