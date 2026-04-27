@@ -145,15 +145,13 @@ export default function AboutPage() {
         </div>
       </main>
 
-      <footer className="border-t border-white/5 py-12 px-6">
+      <footer className="border-t border-white/5 py-12 px-6 mt-20">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-white/30 text-sm">
-            © 2026 SERENDEX Agentic Engine
+            © 2026 SERENDEX Agentic Discovery Engine
           </div>
-          <div className="flex gap-6 text-white/30 text-xs">
-            <Link href="#" className="hover:text-white transition-colors">GitHub</Link>
-            <Link href="#" className="hover:text-white transition-colors">API Docs</Link>
-            <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
+          <div className="text-white/20 text-[10px] uppercase tracking-widest font-mono">
+            Powered by Claude 3.5 & pgvector
           </div>
         </div>
       </footer>
