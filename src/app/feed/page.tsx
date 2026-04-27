@@ -15,7 +15,13 @@ function FeedContent() {
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tier, setTier] = useState<"eco" | "pro">("eco");
   const [showTrace, setShowTrace] = useState(false);
+
+  useEffect(() => {
+    const savedTier = (localStorage.getItem("serendex_tier") as "eco" | "pro") ?? "eco";
+    setTier(savedTier);
+  }, []);
 
   const fetchRecommendations = useCallback(async () => {
     setLoading(true);
@@ -24,7 +30,7 @@ function FeedContent() {
       const userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
       localStorage.setItem("serendex_uid", userId);
 
-      const res = await fetch(`/api/recommendations?user_id=${userId}&q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/recommendations?user_id=${userId}&q=${encodeURIComponent(query)}&tier=${tier}`);
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? `Server error ${res.status}`);
@@ -42,7 +48,7 @@ function FeedContent() {
 
   useEffect(() => {
     if (query) fetchRecommendations();
-  }, [query, fetchRecommendations]);
+  }, [query, tier, fetchRecommendations]);
 
   const handleEvent = async (videoId: string, type: "click" | "skip") => {
     const userId = localStorage.getItem("serendex_uid");
@@ -63,6 +69,26 @@ function FeedContent() {
             SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>
           </h1>
           <div className="flex items-center gap-4">
+            <div className="flex items-center bg-white/5 border border-white/10 rounded-lg p-1">
+              <button
+                onClick={() => {
+                  setTier("eco");
+                  localStorage.setItem("serendex_tier", "eco");
+                }}
+                className={`text-[10px] px-2 py-1 rounded-md transition-all ${tier === "eco" ? "bg-white/10 text-white font-bold" : "text-white/30 hover:text-white/50"}`}
+              >
+                ECO
+              </button>
+              <button
+                onClick={() => {
+                  setTier("pro");
+                  localStorage.setItem("serendex_tier", "pro");
+                }}
+                className={`text-[10px] px-2 py-1 rounded-md transition-all ${tier === "pro" ? "bg-violet-500/20 text-violet-300 font-bold" : "text-white/30 hover:text-white/50"}`}
+              >
+                PRO
+              </button>
+            </div>
             {data?.meta && (
               <span className="text-white/30 text-xs font-mono">
                 {data.meta.total_latency_ms}ms · {data.recommendations.length} results

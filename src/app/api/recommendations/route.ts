@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get("user_id") ?? "anonymous";
   const seedVideoId = searchParams.get("seed_video_id");
   const query = searchParams.get("q") ?? "";
+  const tier = (searchParams.get("tier") as any) ?? "eco";
 
   try {
     const seedVideos = seedVideoId ? await getVideoDetails([seedVideoId]) : [];
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
       userId,
       seedVideos,
       searchQuery: query,
+      tier,
     });
 
     return NextResponse.json(result);

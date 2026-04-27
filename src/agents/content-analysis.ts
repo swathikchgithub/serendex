@@ -1,36 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { generateText, tool } from "ai";
+import { z } from "zod";
+import { getModel, ModelTier } from "@/lib/models";
 import { searchYouTube, getVideoDetails } from "@/lib/youtube";
 import { embedTexts, videoToText, cosineSimilarity } from "@/lib/embeddings";
 import { upsertVideoEmbedding, vectorSearch } from "@/lib/db";
 import type { Video, AgentTrace } from "@/types";
-
-function getClient() { return new Anthropic(); }
-
-const tools: Anthropic.Tool[] = [
-  {
-    name: "search_youtube",
-    description: "Search YouTube for videos matching a query",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "Search query" },
-        max_results: { type: "number", description: "Max results (default 20)" },
-      },
-      required: ["query"],
-    },
-  },
-  {
-    name: "get_video_details",
-    description: "Get full details for specific video IDs",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        video_ids: { type: "array", items: { type: "string" }, description: "List of YouTube video IDs" },
-      },
-      required: ["video_ids"],
-    },
-  },
-];
 
 interface ContentAgentResult {
   candidates: (Video & { similarity_score: number })[];
@@ -42,7 +16,8 @@ interface ContentAgentResult {
 export async function runContentAnalysisAgent(
   seedVideos: Video[],
   userTopics: string[],
-  searchQuery = ""
+  searchQuery = "",
+  tier: ModelTier = "eco"
 ): Promise<ContentAgentResult> {
   const startedAt = new Date().toISOString();
   const toolsCalled: string[] = [];
@@ -54,79 +29,50 @@ export async function runContentAnalysisAgent(
     ...userTopics,
   ].filter(Boolean).slice(0, 3).join(", ");
 
-  const client = getClient();
-  const messages: Anthropic.MessageParam[] = [
-    {
-      role: "user",
-      content: `You are the Content Analysis Agent for SERENDEX. Find 20 high-quality YouTube videos about: "${query}".
+  const model = getModel("content", tier);
 
-${seedVideos.length > 0 ? `Seed videos for reference: ${JSON.stringify(seedVideos.map((v) => ({ title: v.title, tags: v.tags })))}` : ""}
-User's known topics: ${userTopics.join(", ") || "unknown"}.
+  const result = await generateText({
+    model,
+    system: `You are the Content Analysis Agent for SERENDEX. Find 20 high-quality YouTube videos about: "${query}".
+    Use search_youtube to find relevant content. Make 2-3 targeted searches with different angles (tutorials, deep dives, latest news) to maximize diversity.`,
+    prompt: `Seed videos for reference: ${JSON.stringify(seedVideos.map((v) => ({ title: v.title, tags: v.tags })))}
+    User's known topics: ${userTopics.join(", ") || "unknown"}.`,
+    tools: {
+      search_youtube: {
+        description: "Search YouTube for videos matching a query",
+        parameters: z.object({
+          query: z.string().describe("Search query"),
+          max_results: z.number().optional().describe("Max results (default 20)"),
+        }),
+        execute: async (params: any) => {
+          const { query, max_results } = params;
+          toolsCalled.push(`search_youtube:${query}`);
+          const results = await searchYouTube(query, max_results ?? 20);
+          allCandidates.push(...results);
+          return results.map((v) => ({ video_id: v.video_id, title: v.title, tags: v.tags }));
+        },
+      },
+      get_video_details: {
+        description: "Get full details for specific video IDs",
+        parameters: z.object({
+          video_ids: z.array(z.string()).describe("List of YouTube video IDs"),
+        }),
+        execute: async (params: any) => {
+          const { video_ids } = params;
+          toolsCalled.push(`get_video_details:${video_ids.length} videos`);
+          const results = await getVideoDetails(video_ids);
+          allCandidates.push(...results);
+          return results.map((v) => ({ video_id: v.video_id, title: v.title, tags: v.tags }));
+        },
+      },
+    } as any,
+  } as any);
 
-Use search_youtube to find relevant content. Make 2-3 targeted searches with different angles (tutorials, deep dives, latest news) to maximize diversity.`,
-    },
-  ];
-
-  let finalReasoning = "";
-
-  // Agentic loop
-  while (true) {
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
-      tools,
-      messages,
-    });
-
-    // Trim trailing whitespace from assistant content to prevent API errors
-    const sanitizedContent = response.content.map(block => {
-      if (block.type === "text") {
-        return { ...block, text: block.text.trimEnd() };
-      }
-      return block;
-    });
-
-    messages.push({ role: "assistant", content: sanitizedContent });
-
-    if (response.stop_reason === "end_turn") {
-      const textBlock = sanitizedContent.find((b) => b.type === "text");
-      finalReasoning = textBlock ? (textBlock as Anthropic.TextBlock).text : "";
-      break;
-    }
-
-    if (response.stop_reason === "tool_use") {
-      const toolResults: Anthropic.ToolResultBlockParam[] = [];
-
-      for (const block of response.content) {
-        if (block.type !== "tool_use") continue;
-        toolsCalled.push(block.name);
-
-        let result: Video[] = [];
-        if (block.name === "search_youtube") {
-          const input = block.input as { query: string; max_results?: number };
-          result = await searchYouTube(input.query, input.max_results ?? 20);
-          allCandidates.push(...result);
-        } else if (block.name === "get_video_details") {
-          const input = block.input as { video_ids: string[] };
-          result = await getVideoDetails(input.video_ids);
-          allCandidates.push(...result);
-        }
-
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: JSON.stringify(result.map((v) => ({ video_id: v.video_id, title: v.title, tags: v.tags }))),
-        });
-      }
-
-      messages.push({ role: "user", content: toolResults });
-    }
-  }
+  const finalReasoning = result.text;
 
   // Deduplicate candidates
   const unique = Array.from(new Map(allCandidates.map((v) => [v.video_id, v])).values());
 
-  // Compute cosine similarity against seed videos
   if (unique.length === 0 || seedVideos.length === 0) {
     return {
       candidates: [],
@@ -144,7 +90,7 @@ Use search_youtube to find relevant content. Make 2-3 targeted searches with dif
   const seedEmbeddings = allEmbeddings.slice(0, seedTexts.length);
   const candidateEmbeddings = allEmbeddings.slice(seedTexts.length);
 
-  // Persist candidate embeddings to pgvector for future searches
+  // Persist candidate embeddings to pgvector
   await Promise.allSettled(
     unique.map((video, i) =>
       upsertVideoEmbedding(
@@ -159,7 +105,7 @@ Use search_youtube to find relevant content. Make 2-3 targeted searches with dif
     )
   );
 
-  // Also search pgvector index for previously seen similar videos
+  // Search pgvector index
   let dbResults: (Video & { similarity_score: number })[] = [];
   if (seedEmbeddings.length > 0) {
     const dbHits = await vectorSearch(seedEmbeddings[0], 10, unique.map((v) => v.video_id));

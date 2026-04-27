@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { generateText } from "ai";
+import { getModel, ModelTier } from "@/lib/models";
 import type { ScoredVideo, UserProfile, AgentTrace } from "@/types";
-
 
 interface ExplanationResult {
   videos: ScoredVideo[];
@@ -10,7 +10,8 @@ interface ExplanationResult {
 export async function runExplanationAgent(
   videos: ScoredVideo[],
   userProfile: UserProfile,
-  risingTopics: string[]
+  risingTopics: string[],
+  tier: ModelTier = "eco"
 ): Promise<ExplanationResult> {
   const startedAt = new Date().toISOString();
 
@@ -34,18 +35,14 @@ ${videos.map((v, i) => `${i + 1}. "${v.title}" by ${v.channel} (scores: content=
 Respond with a JSON array (same order as input):
 [{"explanation": "...", "explanation_type": "..."}]`;
 
-  const client = new Anthropic();
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 2048,
-    messages: [{ role: "user", content: prompt }],
+  const { text } = await generateText({
+    model: getModel("explanation", tier),
+    prompt: prompt,
   });
 
-  const textBlock = response.content.find((b) => b.type === "text");
   let explanations: { explanation: string; explanation_type: ScoredVideo["explanation_type"] }[] = [];
 
   try {
-    const text = (textBlock as Anthropic.TextBlock).text;
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       explanations = JSON.parse(jsonMatch[0]);
@@ -70,7 +67,7 @@ Respond with a JSON array (same order as input):
     started_at: startedAt,
     completed_at: completedAt,
     latency_ms: new Date(completedAt).getTime() - new Date(startedAt).getTime(),
-    tools_called: ["claude_sonnet"],
+    tools_called: [tier === "eco" ? "gemini-1.5-flash" : "claude-3-5-sonnet"],
     reasoning: "Generated personalized explanations for all recommendations",
     output_count: enriched.length,
     confidence: 0.9,

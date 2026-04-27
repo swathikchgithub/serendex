@@ -31,6 +31,7 @@ export function VideoSidebar({ seedVideoId }: Props) {
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tier, setTier] = useState<"eco" | "pro">("eco");
 
   useEffect(() => {
     let userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
@@ -48,8 +49,11 @@ export function VideoSidebar({ seedVideoId }: Props) {
     }).catch(() => {});
 
     // Fetch recommendations seeded by this video
+    const savedTier = (localStorage.getItem("serendex_tier") as "eco" | "pro") ?? "eco";
+    setTier(savedTier);
+
     setError(null);
-    fetch(`/api/recommendations?user_id=${userId}&seed_video_id=${seedVideoId}`)
+    fetch(`/api/recommendations?user_id=${userId}&seed_video_id=${seedVideoId}&tier=${savedTier}`)
       .then(async (r) => {
         const json = await r.json();
         if (!r.ok) {
