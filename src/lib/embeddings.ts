@@ -16,6 +16,14 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
   });
 
   const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.message || `Voyage AI error ${res.status}`);
+  }
+  
+  if (!data.data) {
+    throw new Error("Voyage AI returned no data");
+  }
+
   return data.data.map((d: { embedding: number[] }) => d.embedding);
 }
 

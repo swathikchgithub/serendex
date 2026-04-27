@@ -17,6 +17,10 @@ export async function searchYouTube(query: string, maxResults = 20): Promise<Vid
   const res = await fetch(url.toString());
   const data = await res.json();
 
+  if (!res.ok) {
+    throw new Error(data.error?.message || `YouTube search error ${res.status}`);
+  }
+
   if (!data.items) return [];
 
   const videoIds = data.items.map((i: { id: { videoId: string } }) => i.id.videoId).join(",");
@@ -31,6 +35,10 @@ export async function getVideoDetails(videoIds: string[]): Promise<Video[]> {
 
   const res = await fetch(url.toString());
   const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error?.message || `YouTube details error ${res.status}`);
+  }
 
   if (!data.items) return [];
 
@@ -72,6 +80,10 @@ export async function getTrendingVideos(regionCode = "US", categoryId = "0"): Pr
 
   const res = await fetch(url.toString());
   const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error?.message || `YouTube trending error ${res.status}`);
+  }
 
   if (!data.items) return [];
 
