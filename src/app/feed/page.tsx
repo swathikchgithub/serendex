@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { AgentTracePanel } from "@/components/AgentTrace";
 import type { RecommendationResponse } from "@/types";
 
-export default function FeedPage() {
+// Extracted into its own component so it can be wrapped in <Suspense>
+// (Next.js requires this for any component using useSearchParams)
+function FeedContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") ?? "";
   const [data, setData] = useState<RecommendationResponse | null>(null);
@@ -127,5 +129,23 @@ export default function FeedPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function FeedPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex gap-2">
+          {["🧠", "⚡", "👤", "📈", "🛡️", "💬"].map((icon, i) => (
+            <span key={i} className="text-2xl animate-bounce" style={{ animationDelay: `${i * 0.1}s` }}>
+              {icon}
+            </span>
+          ))}
+        </div>
+      </div>
+    }>
+      <FeedContent />
+    </Suspense>
   );
 }
