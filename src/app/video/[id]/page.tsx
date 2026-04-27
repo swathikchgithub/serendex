@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getVideoDetails } from "@/lib/youtube";
 import { VideoSidebar } from "@/components/VideoSidebar";
+import { Header } from "@/components/Header";
 import Link from "next/link";
 
 interface Props {
@@ -23,19 +24,7 @@ export default async function VideoPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Navbar */}
-      <header className="sticky top-0 z-10 bg-black/80 backdrop-blur border-b border-white/10 px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center gap-6">
-          <Link href="/" className="font-black text-xl shrink-0">
-            SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>
-          </Link>
-          <nav className="flex items-center gap-1 text-sm text-white/40">
-            <Link href="/" className="hover:text-white/70 transition-colors">Home</Link>
-            <span className="mx-1">/</span>
-            <span className="text-white/60 truncate max-w-xs">{video.title}</span>
-          </nav>
-        </div>
-      </header>
+      <Header title={video.title} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
