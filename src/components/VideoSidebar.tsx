@@ -30,6 +30,7 @@ export function VideoSidebar({ seedVideoId }: Props) {
   const router = useRouter();
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
@@ -47,12 +48,22 @@ export function VideoSidebar({ seedVideoId }: Props) {
     }).catch(() => {});
 
     // Fetch recommendations seeded by this video
+    setError(null);
     fetch(`/api/recommendations?user_id=${userId}&seed_video_id=${seedVideoId}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) {
+          throw new Error(json.error ?? `Server error ${r.status}`);
+        }
+        return json;
+      })
       .then((json) => {
         if (json.recommendations) setData(json as RecommendationResponse);
       })
-      .catch(console.error)
+      .catch((err) => {
+        setError(err.message);
+        console.error(err);
+      })
       .finally(() => setLoading(false));
   }, [seedVideoId]);
 
@@ -147,8 +158,15 @@ export function VideoSidebar({ seedVideoId }: Props) {
         </button>
       ))}
 
-      {!loading && !data && (
-        <p className="text-white/20 text-xs text-center py-8">Could not load recommendations.</p>
+      {!loading && error && (
+        <div className="flex flex-col items-center justify-center py-12 px-4 gap-2 border border-white/5 rounded-2xl bg-white/5">
+          <span className="text-xl">⚠️</span>
+          <p className="text-white/60 text-[10px] text-center font-mono break-all">{error}</p>
+        </div>
+      )}
+
+      {!loading && !data && !error && (
+        <p className="text-white/20 text-xs text-center py-8">No recommendations found.</p>
       )}
     </aside>
   );
