@@ -38,7 +38,7 @@ export async function runContentAnalysisAgent(
     prompt: `Seed videos for reference: ${JSON.stringify(seedVideos.map((v) => ({ title: v.title, tags: v.tags })))}
     User's known topics: ${userTopics.join(", ") || "unknown"}.`,
     tools: {
-      search_youtube: {
+      search_youtube: tool({
         description: "Search YouTube for videos matching a query",
         parameters: z.object({
           query: z.string().describe("Search query"),
@@ -51,8 +51,8 @@ export async function runContentAnalysisAgent(
           allCandidates.push(...results);
           return results.map((v) => ({ video_id: v.video_id, title: v.title, tags: v.tags }));
         },
-      },
-      get_video_details: {
+      } as any),
+      get_video_details: tool({
         description: "Get full details for specific video IDs",
         parameters: z.object({
           video_ids: z.array(z.string()).describe("List of YouTube video IDs"),
@@ -64,8 +64,9 @@ export async function runContentAnalysisAgent(
           allCandidates.push(...results);
           return results.map((v) => ({ video_id: v.video_id, title: v.title, tags: v.tags }));
         },
-      },
-    } as any,
+      } as any),
+    },
+    maxSteps: 5,
   } as any);
 
   const finalReasoning = result.text;
