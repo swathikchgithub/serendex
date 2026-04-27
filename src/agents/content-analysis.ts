@@ -1,6 +1,6 @@
 import { generateText, tool } from "ai";
 import { z } from "zod";
-import { getModel, ModelTier } from "@/lib/models";
+import { getModel } from "@/lib/models";
 import { searchYouTube, getVideoDetails } from "@/lib/youtube";
 import { embedTexts, videoToText, cosineSimilarity } from "@/lib/embeddings";
 import { upsertVideoEmbedding, vectorSearch } from "@/lib/db";
@@ -17,7 +17,7 @@ export async function runContentAnalysisAgent(
   seedVideos: Video[],
   userTopics: string[],
   searchQuery = "",
-  tier: ModelTier = "eco"
+  modelId = "gpt-4o-mini"
 ): Promise<ContentAgentResult> {
   const startedAt = new Date().toISOString();
   const toolsCalled: string[] = [];
@@ -29,7 +29,7 @@ export async function runContentAnalysisAgent(
     ...userTopics,
   ].filter(Boolean).slice(0, 3).join(", ");
 
-  const model = getModel("content", tier);
+  const model = getModel("content", modelId);
 
   const result = await generateText({
     model,

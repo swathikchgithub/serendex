@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ModelTier } from "@/lib/models";
+import { MODELS } from "@/lib/models";
 import type { RecommendationResponse, ScoredVideo } from "@/types";
 
 const EXPLANATION_COLORS: Record<ScoredVideo["explanation_type"], string> = {
@@ -32,7 +32,7 @@ export function VideoSidebar({ seedVideoId }: Props) {
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tier, setTier] = useState<ModelTier>("eco");
+  const [modelId, setModelId] = useState<string>("gpt-4o-mini");
 
   useEffect(() => {
     let userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
@@ -50,11 +50,11 @@ export function VideoSidebar({ seedVideoId }: Props) {
     }).catch(() => {});
 
     // Fetch recommendations seeded by this video
-    const savedTier = (localStorage.getItem("serendex_tier") as ModelTier) ?? "eco";
-    setTier(savedTier);
+    const savedModel = localStorage.getItem("serendex_model") ?? "gpt-4o-mini";
+    setModelId(savedModel);
 
     setError(null);
-    fetch(`/api/recommendations?user_id=${userId}&seed_video_id=${seedVideoId}&tier=${savedTier}`)
+    fetch(`/api/recommendations?user_id=${userId}&seed_video_id=${seedVideoId}&model=${savedModel}`)
       .then(async (r) => {
         const json = await r.json();
         if (!r.ok) {
@@ -92,21 +92,19 @@ export function VideoSidebar({ seedVideoId }: Props) {
         </h2>
         <div className="flex items-center gap-2">
           <select
-            value={tier}
+            value={modelId}
             onChange={(e) => {
-              const val = e.target.value as ModelTier;
-              setTier(val);
-              localStorage.setItem("serendex_tier", val);
+              const val = e.target.value;
+              setModelId(val);
+              localStorage.setItem("serendex_model", val);
               // Force refresh
               window.location.reload();
             }}
-            className="bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.5 text-[9px] text-white/40 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter"
+            className="bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.5 text-[9px] text-white/40 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter max-w-[100px]"
           >
-            <option value="eco">🌱 Eco</option>
-            <option value="speed">⚡ Speed</option>
-            <option value="pro">🧠 Pro</option>
-            <option value="openai">🤖 AI</option>
-            <option value="openrouter">🌐 OR</option>
+            {MODELS.map((m) => (
+              <option key={m.value} value={m.value}>{m.label.split(' (')[0]}</option>
+            ))}
           </select>
           {data?.meta && (
             <span className="text-white/25 text-[10px] font-mono">

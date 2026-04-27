@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { AgentTracePanel } from "@/components/AgentTrace";
-import { ModelTier } from "@/lib/models";
+import { MODELS } from "@/lib/models";
 import type { RecommendationResponse } from "@/types";
 
 // Extracted into its own component so it can be wrapped in <Suspense>
@@ -16,12 +16,12 @@ function FeedContent() {
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tier, setTier] = useState<ModelTier>("eco");
+  const [modelId, setModelId] = useState<string>("gpt-4o-mini");
   const [showTrace, setShowTrace] = useState(false);
 
   useEffect(() => {
-    const savedTier = (localStorage.getItem("serendex_tier") as ModelTier) ?? "eco";
-    setTier(savedTier);
+    const savedModel = localStorage.getItem("serendex_model") ?? "gpt-4o-mini";
+    setModelId(savedModel);
   }, []);
 
   const fetchRecommendations = useCallback(async () => {
@@ -31,7 +31,7 @@ function FeedContent() {
       const userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
       localStorage.setItem("serendex_uid", userId);
 
-      const res = await fetch(`/api/recommendations?user_id=${userId}&q=${encodeURIComponent(query)}&tier=${tier}`);
+      const res = await fetch(`/api/recommendations?user_id=${userId}&q=${encodeURIComponent(query)}&model=${modelId}`);
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? `Server error ${res.status}`);
@@ -49,7 +49,7 @@ function FeedContent() {
 
   useEffect(() => {
     if (query) fetchRecommendations();
-  }, [query, tier, fetchRecommendations]);
+  }, [query, modelId, fetchRecommendations]);
 
   const handleEvent = async (videoId: string, type: "click" | "skip") => {
     const userId = localStorage.getItem("serendex_uid");
@@ -71,19 +71,17 @@ function FeedContent() {
           </h1>
           <div className="flex items-center gap-4">
             <select
-              value={tier}
+              value={modelId}
               onChange={(e) => {
-                const val = e.target.value as ModelTier;
-                setTier(val);
-                localStorage.setItem("serendex_tier", val);
+                const val = e.target.value;
+                setModelId(val);
+                localStorage.setItem("serendex_model", val);
               }}
-              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/70 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter"
+              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/70 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter max-w-[140px]"
             >
-              <option value="eco">🌱 Eco (Gemini)</option>
-              <option value="speed">⚡ Speed (Groq)</option>
-              <option value="pro">🧠 Pro (Claude)</option>
-              <option value="openai">🤖 OpenAI (4o)</option>
-              <option value="openrouter">🌐 OpenRouter</option>
+              {MODELS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
             </select>
             {data?.meta && (
               <span className="text-white/30 text-xs font-mono">

@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { getModel, ModelTier } from "@/lib/models";
+import { getModel } from "@/lib/models";
 import type { ScoredVideo, UserProfile, AgentTrace } from "@/types";
 
 interface ExplanationResult {
@@ -11,7 +11,7 @@ export async function runExplanationAgent(
   videos: ScoredVideo[],
   userProfile: UserProfile,
   risingTopics: string[],
-  tier: ModelTier = "eco"
+  modelId = "gpt-4o-mini"
 ): Promise<ExplanationResult> {
   const startedAt = new Date().toISOString();
 
@@ -36,7 +36,7 @@ Respond with a JSON array (same order as input):
 [{"explanation": "...", "explanation_type": "..."}]`;
 
   const { text } = await generateText({
-    model: getModel("explanation", tier),
+    model: getModel("explanation", modelId),
     prompt: prompt,
   });
 
@@ -67,7 +67,7 @@ Respond with a JSON array (same order as input):
     started_at: startedAt,
     completed_at: completedAt,
     latency_ms: new Date(completedAt).getTime() - new Date(startedAt).getTime(),
-    tools_called: [tier === "eco" ? "gemini-1.5-flash" : "claude-3-5-sonnet"],
+    tools_called: [modelId],
     reasoning: "Generated personalized explanations for all recommendations",
     output_count: enriched.length,
     confidence: 0.9,

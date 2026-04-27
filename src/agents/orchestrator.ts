@@ -5,18 +5,18 @@ import { runDiversityGuardAgent } from "./diversity-guard";
 import { runExplanationAgent } from "./explanation";
 import type { Video, ScoredVideo, RecommendationResponse } from "@/types";
 
-import { ModelTier } from "@/lib/models";
+import { getModel } from "@/lib/models";
 
 interface OrchestratorInput {
   userId: string;
   seedVideos?: Video[];
   searchQuery?: string;
-  tier?: ModelTier;
+  modelId?: string;
 }
 
 export async function runOrchestrator(input: OrchestratorInput): Promise<RecommendationResponse> {
   const start = Date.now();
-  const { userId, seedVideos = [], searchQuery = "", tier = "eco" } = input;
+  const { userId, seedVideos = [], searchQuery = "", modelId = "gpt-4o-mini" } = input;
 
   // Step 1: Run profiling first to determine strategy (fast — Redis only)
   const profilingResult = await runUserProfilingAgent(userId);
@@ -35,7 +35,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Recomme
   const topicHints = [searchQuery, ...top_topics, ...seedVideos.map((v) => v.title.split(" ")[0])].filter(Boolean).slice(0, 3);
 
   const [contentResult, trendResult] = await Promise.all([
-    runContentAnalysisAgent(seedVideos, top_topics, searchQuery, tier),
+    runContentAnalysisAgent(seedVideos, top_topics, searchQuery, modelId),
     runTrendScoutAgent(topicHints),
   ]);
 
@@ -94,7 +94,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Recomme
     final_list,
     profile,
     trendResult.rising_topics,
-    tier
+    modelId
   );
 
   return {
