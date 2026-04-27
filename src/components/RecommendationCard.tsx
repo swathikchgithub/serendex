@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { ScoredVideo } from "@/types";
 
 const EXPLANATION_COLORS = {
@@ -24,12 +25,18 @@ interface Props {
 }
 
 export function RecommendationCard({ video, onEvent }: Props) {
+  const router = useRouter();
   const scorePercent = Math.round(video.scores.final_score * 100);
+
+  const handleClick = () => {
+    onEvent?.("click");
+    router.push(`/video/${video.video_id}`);
+  };
 
   return (
     <div
       className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-white/20 hover:bg-white/8 transition-all cursor-pointer"
-      onClick={() => onEvent?.("click")}
+      onClick={handleClick}
     >
       {/* Thumbnail */}
       <div className="relative aspect-video bg-black/40 overflow-hidden">

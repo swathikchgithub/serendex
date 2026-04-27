@@ -20,8 +20,8 @@ export default function FeedPage() {
       localStorage.setItem("serendex_uid", userId);
 
       const res = await fetch(`/api/recommendations?user_id=${userId}&q=${encodeURIComponent(query)}`);
-      const json: RecommendationResponse = await res.json();
-      setData(json);
+      const json = await res.json();
+      if (json.recommendations) setData(json as RecommendationResponse);
     } catch (err) {
       console.error(err);
     } finally {
@@ -52,7 +52,7 @@ export default function FeedPage() {
             SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>
           </h1>
           <div className="flex items-center gap-4">
-            {data && (
+            {data?.meta && (
               <span className="text-white/30 text-xs font-mono">
                 {data.meta.total_latency_ms}ms · {data.recommendations.length} results
               </span>

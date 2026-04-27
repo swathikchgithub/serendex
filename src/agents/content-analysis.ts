@@ -41,25 +41,28 @@ interface ContentAgentResult {
 
 export async function runContentAnalysisAgent(
   seedVideos: Video[],
-  userTopics: string[]
+  userTopics: string[],
+  searchQuery = ""
 ): Promise<ContentAgentResult> {
   const startedAt = new Date().toISOString();
   const toolsCalled: string[] = [];
   const allCandidates: Video[] = [];
 
   const query = [
+    searchQuery,
     ...seedVideos.map((v) => v.title),
     ...userTopics,
-  ].slice(0, 3).join(", ");
+  ].filter(Boolean).slice(0, 3).join(", ");
 
   const messages: Anthropic.MessageParam[] = [
     {
       role: "user",
-      content: `You are the Content Analysis Agent for SERENDEX. Find 20 videos semantically similar to these seed videos: ${JSON.stringify(seedVideos.map((v) => ({ title: v.title, tags: v.tags })))}.
+      content: `You are the Content Analysis Agent for SERENDEX. Find 20 high-quality YouTube videos about: "${query}".
 
+${seedVideos.length > 0 ? `Seed videos for reference: ${JSON.stringify(seedVideos.map((v) => ({ title: v.title, tags: v.tags })))}` : ""}
 User's known topics: ${userTopics.join(", ") || "unknown"}.
 
-Use search_youtube to find relevant content. Make 2-3 targeted searches to maximize diversity of high-quality candidates.`,
+Use search_youtube to find relevant content. Make 2-3 targeted searches with different angles (tutorials, deep dives, latest news) to maximize diversity.`,
     },
   ];
 

@@ -29,10 +29,10 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Recomme
     : `Returning user with ${Object.keys(profile.interest_graph).length} known interests. Running all agents. Profiling weight: ${weights.profiling}. Topics: ${top_topics.join(", ")}.`;
 
   // Step 3: Run remaining agents in parallel
-  const topicHints = [...top_topics, ...seedVideos.map((v) => v.title.split(" ")[0])].slice(0, 3);
+  const topicHints = [searchQuery, ...top_topics, ...seedVideos.map((v) => v.title.split(" ")[0])].filter(Boolean).slice(0, 3);
 
   const [contentResult, trendResult] = await Promise.all([
-    runContentAnalysisAgent(seedVideos, top_topics),
+    runContentAnalysisAgent(seedVideos, top_topics, searchQuery),
     runTrendScoutAgent(topicHints),
   ]);
 

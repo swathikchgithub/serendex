@@ -19,7 +19,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error("[recommendations]", err);
-    return NextResponse.json({ error: "Failed to generate recommendations" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[recommendations]", message, stack);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
