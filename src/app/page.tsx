@@ -15,7 +15,17 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black flex flex-col items-center justify-center p-8">
+    <main className="min-h-screen bg-black flex flex-col items-center justify-center p-8 relative overflow-hidden">
+      {/* Top Nav */}
+      <nav className="absolute top-8 right-8 flex gap-6">
+        <button 
+          onClick={() => router.push('/about')}
+          className="text-sm text-white/40 hover:text-white transition-colors"
+        >
+          How it works
+        </button>
+      </nav>
+
       <div className="text-center mb-12">
         <h1 className="text-5xl font-black tracking-tight text-white mb-2">
           SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>

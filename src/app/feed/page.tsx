@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { AgentTracePanel } from "@/components/AgentTrace";
@@ -73,6 +74,12 @@ function FeedContent() {
             >
               {showTrace ? "Hide" : "Show"} Agent Trace
             </button>
+            <Link 
+              href="/about"
+              className="text-xs text-white/40 hover:text-white transition-colors"
+            >
+              How it works
+            </Link>
           </div>
         </div>
       </header>
