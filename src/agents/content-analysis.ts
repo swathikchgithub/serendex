@@ -78,10 +78,18 @@ Use search_youtube to find relevant content. Make 2-3 targeted searches with dif
       messages,
     });
 
-    messages.push({ role: "assistant", content: response.content });
+    // Trim trailing whitespace from assistant content to prevent API errors
+    const sanitizedContent = response.content.map(block => {
+      if (block.type === "text") {
+        return { ...block, text: block.text.trimEnd() };
+      }
+      return block;
+    });
+
+    messages.push({ role: "assistant", content: sanitizedContent });
 
     if (response.stop_reason === "end_turn") {
-      const textBlock = response.content.find((b) => b.type === "text");
+      const textBlock = sanitizedContent.find((b) => b.type === "text");
       finalReasoning = textBlock ? (textBlock as Anthropic.TextBlock).text : "";
       break;
     }
