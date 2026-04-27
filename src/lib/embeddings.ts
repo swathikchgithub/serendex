@@ -1,12 +1,15 @@
 import type { Video } from "@/types";
 
-const VOYAGE_API_KEY = process.env.VOYAGE_API_KEY!;
+function getApiKey() {
+  if (!process.env.VOYAGE_API_KEY) throw new Error("VOYAGE_API_KEY is not set");
+  return process.env.VOYAGE_API_KEY;
+}
 
 export async function embedTexts(texts: string[]): Promise<number[][]> {
   const res = await fetch("https://api.voyageai.com/v1/embeddings", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${VOYAGE_API_KEY}`,
+      "Authorization": `Bearer ${getApiKey()}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ input: texts, model: "voyage-2" }),

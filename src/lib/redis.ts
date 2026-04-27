@@ -5,10 +5,13 @@ let _redis: Redis | null = null;
 
 function getRedis(): Redis {
   if (!_redis) {
-    _redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    });
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    if (!url) throw new Error("UPSTASH_REDIS_REST_URL is missing in environment variables");
+    if (!token) throw new Error("UPSTASH_REDIS_REST_TOKEN is missing in environment variables");
+
+    _redis = new Redis({ url, token });
   }
   return _redis;
 }

@@ -1,7 +1,10 @@
 import type { Video } from "@/types";
 
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
-const API_KEY = process.env.YOUTUBE_API_KEY!;
+function getApiKey() {
+  if (!process.env.YOUTUBE_API_KEY) throw new Error("YOUTUBE_API_KEY is not set");
+  return process.env.YOUTUBE_API_KEY;
+}
 
 export async function searchYouTube(query: string, maxResults = 20): Promise<Video[]> {
   const url = new URL(`${YOUTUBE_API_BASE}/search`);
@@ -9,7 +12,7 @@ export async function searchYouTube(query: string, maxResults = 20): Promise<Vid
   url.searchParams.set("q", query);
   url.searchParams.set("type", "video");
   url.searchParams.set("maxResults", String(maxResults));
-  url.searchParams.set("key", API_KEY);
+  url.searchParams.set("key", getApiKey());
 
   const res = await fetch(url.toString());
   const data = await res.json();
@@ -24,7 +27,7 @@ export async function getVideoDetails(videoIds: string[]): Promise<Video[]> {
   const url = new URL(`${YOUTUBE_API_BASE}/videos`);
   url.searchParams.set("part", "snippet,contentDetails,statistics");
   url.searchParams.set("id", videoIds.join(","));
-  url.searchParams.set("key", API_KEY);
+  url.searchParams.set("key", getApiKey());
 
   const res = await fetch(url.toString());
   const data = await res.json();
@@ -65,7 +68,7 @@ export async function getTrendingVideos(regionCode = "US", categoryId = "0"): Pr
   url.searchParams.set("regionCode", regionCode);
   url.searchParams.set("videoCategoryId", categoryId);
   url.searchParams.set("maxResults", "20");
-  url.searchParams.set("key", API_KEY);
+  url.searchParams.set("key", getApiKey());
 
   const res = await fetch(url.toString());
   const data = await res.json();
