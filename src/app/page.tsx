@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MODELS } from "@/lib/models";
 
 export default function Home() {
   const [query, setQuery] = useState("");
+  const [modelId, setModelId] = useState("gpt-4o-mini");
   const router = useRouter();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("serendex_model") ?? "gpt-4o-mini";
+    setModelId(saved);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +58,24 @@ export default function Home() {
           >
             Discover
           </button>
+        </div>
+        
+        {/* Model Selector */}
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <span className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Powered by</span>
+          <select
+            value={modelId}
+            onChange={(e) => {
+              const val = e.target.value;
+              setModelId(val);
+              localStorage.setItem("serendex_model", val);
+            }}
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] text-white/60 focus:outline-none hover:bg-white/10 transition-colors font-medium cursor-pointer"
+          >
+            {MODELS.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
         </div>
       </form>
 

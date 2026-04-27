@@ -105,7 +105,42 @@ function FeedContent() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Query header */}
+        {/* Discovery Summary */}
+        {data && !loading && !error && (
+          <div className="mb-8 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-2xl">
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-violet-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                  </span>
+                  Discovery Insights
+                </div>
+                <h2 className="text-lg font-medium text-white/90 leading-relaxed">
+                  {data.meta.orchestrator_reasoning}
+                </h2>
+              </div>
+              
+              <div className="flex gap-4">
+                <div className="bg-black/20 rounded-2xl px-4 py-3 border border-white/5 flex flex-col items-center min-w-[80px]">
+                  <span className="text-white font-bold text-lg">{data.meta.total_latency_ms}<span className="text-[10px] ml-0.5 opacity-50">ms</span></span>
+                  <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold">Latency</span>
+                </div>
+                <div className="bg-black/20 rounded-2xl px-4 py-3 border border-white/5 flex flex-col items-center min-w-[80px]">
+                  <span className="text-white font-bold text-lg">{data.meta.agents_invoked.length}</span>
+                  <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold">Agents</span>
+                </div>
+                <div className="bg-black/20 rounded-2xl px-4 py-3 border border-white/5 flex flex-col items-center min-w-[80px]">
+                  <span className="text-white font-bold text-lg">{Math.round(data.meta.diversity_score * 100)}<span className="text-[10px] ml-0.5 opacity-50">%</span></span>
+                  <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold">Diversity</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Results grid */}
         <div className="mb-8">
           <p className="text-white/30 text-sm">Results for</p>
           <h2 className="text-2xl font-bold text-white mt-1">{query}</h2>
