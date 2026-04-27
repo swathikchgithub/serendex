@@ -12,22 +12,28 @@ interface ProfilingResult {
 export async function runUserProfilingAgent(userId: string): Promise<ProfilingResult> {
   const startedAt = new Date().toISOString();
 
-  const [history, existingProfile] = await Promise.all([
-    getUserHistory(userId, 20),
-    getUserProfile(userId),
-  ]);
+  // Gracefully handle missing Redis config (e.g. env vars not yet set)
+  let history: WatchEvent[] = [];
+  let existingProfile: UserProfile | null = null;
+  try {
+    [history, existingProfile] = await Promise.all([
+      getUserHistory(userId, 20),
+      getUserProfile(userId),
+    ]);
+  } catch {
+    return {
+      profile: coldStartProfile(userId),
+      top_topics: [],
+      is_cold_start: true,
+      confidence: 0.1,
+      trace: buildTrace(startedAt, [], 0, 0.1, "Redis unavailable — falling back to cold start"),
+    };
+  }
 
   const isColdStart = history.length < 3;
 
   if (isColdStart) {
-    const emptyProfile: UserProfile = {
-      user_id: userId,
-      interest_graph: {},
-      channel_prefs: {},
-      format_prefs: { shorts: 0.33, long_form: 0.33, tutorials: 0.33 },
-      negative_signals: [],
-      last_updated: new Date().toISOString(),
-    };
+    const emptyProfile: UserProfile = coldStartProfile(userId);
     return {
       profile: emptyProfile,
       top_topics: [],
@@ -110,6 +116,17 @@ function eventWeight(event: WatchEvent): number {
     case "dislike": return -0.5;
     default: return 0;
   }
+}
+
+function coldStartProfile(userId: string): UserProfile {
+  return {
+    user_id: userId,
+    interest_graph: {},
+    channel_prefs: {},
+    format_prefs: { shorts: 0.33, long_form: 0.33, tutorials: 0.33 },
+    negative_signals: [],
+    last_updated: new Date().toISOString(),
+  };
 }
 
 function buildTrace(
