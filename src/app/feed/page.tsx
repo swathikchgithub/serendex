@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { AgentTracePanel } from "@/components/AgentTrace";
+import { ModelTier } from "@/lib/models";
 import type { RecommendationResponse } from "@/types";
 
 // Extracted into its own component so it can be wrapped in <Suspense>
@@ -15,11 +16,11 @@ function FeedContent() {
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tier, setTier] = useState<"eco" | "pro">("eco");
+  const [tier, setTier] = useState<ModelTier>("eco");
   const [showTrace, setShowTrace] = useState(false);
 
   useEffect(() => {
-    const savedTier = (localStorage.getItem("serendex_tier") as "eco" | "pro") ?? "eco";
+    const savedTier = (localStorage.getItem("serendex_tier") as ModelTier) ?? "eco";
     setTier(savedTier);
   }, []);
 
@@ -69,26 +70,21 @@ function FeedContent() {
             SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>
           </h1>
           <div className="flex items-center gap-4">
-            <div className="flex items-center bg-white/5 border border-white/10 rounded-lg p-1">
-              <button
-                onClick={() => {
-                  setTier("eco");
-                  localStorage.setItem("serendex_tier", "eco");
-                }}
-                className={`text-[10px] px-2 py-1 rounded-md transition-all ${tier === "eco" ? "bg-white/10 text-white font-bold" : "text-white/30 hover:text-white/50"}`}
-              >
-                ECO
-              </button>
-              <button
-                onClick={() => {
-                  setTier("pro");
-                  localStorage.setItem("serendex_tier", "pro");
-                }}
-                className={`text-[10px] px-2 py-1 rounded-md transition-all ${tier === "pro" ? "bg-violet-500/20 text-violet-300 font-bold" : "text-white/30 hover:text-white/50"}`}
-              >
-                PRO
-              </button>
-            </div>
+            <select
+              value={tier}
+              onChange={(e) => {
+                const val = e.target.value as ModelTier;
+                setTier(val);
+                localStorage.setItem("serendex_tier", val);
+              }}
+              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/70 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter"
+            >
+              <option value="eco">🌱 Eco (Gemini)</option>
+              <option value="speed">⚡ Speed (Groq)</option>
+              <option value="pro">🧠 Pro (Claude)</option>
+              <option value="openai">🤖 OpenAI (4o)</option>
+              <option value="openrouter">🌐 OpenRouter</option>
+            </select>
             {data?.meta && (
               <span className="text-white/30 text-xs font-mono">
                 {data.meta.total_latency_ms}ms · {data.recommendations.length} results

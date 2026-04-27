@@ -1,24 +1,27 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
-import { openai } from "@ai-sdk/openai";
+import { openai, createOpenAI } from "@ai-sdk/openai";
+import { groq } from "@ai-sdk/groq";
 
-export type ModelProvider = "anthropic" | "google" | "openai";
-export type ModelTier = "eco" | "pro";
+export type ModelTier = "eco" | "speed" | "pro" | "openai" | "openrouter";
+
+const openrouter = createOpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 export function getModel(agent: "content" | "explanation", tier: ModelTier = "eco") {
-  if (tier === "pro") {
-    // Pro Tier: Highest reasoning quality
-    return agent === "content" 
-      ? anthropic("claude-3-5-sonnet-20241022") 
-      : anthropic("claude-3-5-sonnet-20241022");
-  }
-
-  // Eco Tier: Fast and cost-effective (mostly free tiers)
-  if (agent === "content") {
-    // Content Analysis needs tool calling support
-    return google("gemini-1.5-flash");
-  } else {
-    // Explanation is simple text generation
-    return google("gemini-1.5-flash");
+  switch (tier) {
+    case "pro":
+      return anthropic("claude-3-5-sonnet-20241022");
+    case "speed":
+      return groq("llama-3.3-70b-versatile");
+    case "openai":
+      return openai("gpt-4o");
+    case "openrouter":
+      return openrouter("anthropic/claude-3.5-sonnet");
+    case "eco":
+    default:
+      return google("gemini-1.5-flash");
   }
 }

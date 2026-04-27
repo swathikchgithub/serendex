@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ModelTier } from "@/lib/models";
 import type { RecommendationResponse, ScoredVideo } from "@/types";
 
 const EXPLANATION_COLORS: Record<ScoredVideo["explanation_type"], string> = {
@@ -31,7 +32,7 @@ export function VideoSidebar({ seedVideoId }: Props) {
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tier, setTier] = useState<"eco" | "pro">("eco");
+  const [tier, setTier] = useState<ModelTier>("eco");
 
   useEffect(() => {
     let userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
@@ -49,7 +50,7 @@ export function VideoSidebar({ seedVideoId }: Props) {
     }).catch(() => {});
 
     // Fetch recommendations seeded by this video
-    const savedTier = (localStorage.getItem("serendex_tier") as "eco" | "pro") ?? "eco";
+    const savedTier = (localStorage.getItem("serendex_tier") as ModelTier) ?? "eco";
     setTier(savedTier);
 
     setError(null);
@@ -85,16 +86,34 @@ export function VideoSidebar({ seedVideoId }: Props) {
 
   return (
     <aside className="flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-1">
-        <h2 className="text-white/70 text-sm font-semibold uppercase tracking-widest">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-white/70 text-sm font-semibold uppercase tracking-widest text-[10px]">
           Up Next
         </h2>
-        {data?.meta && (
-          <span className="text-white/25 text-xs font-mono">
-            {data.meta.total_latency_ms}ms
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          <select
+            value={tier}
+            onChange={(e) => {
+              const val = e.target.value as ModelTier;
+              setTier(val);
+              localStorage.setItem("serendex_tier", val);
+              // Force refresh
+              window.location.reload();
+            }}
+            className="bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.5 text-[9px] text-white/40 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter"
+          >
+            <option value="eco">🌱 Eco</option>
+            <option value="speed">⚡ Speed</option>
+            <option value="pro">🧠 Pro</option>
+            <option value="openai">🤖 AI</option>
+            <option value="openrouter">🌐 OR</option>
+          </select>
+          {data?.meta && (
+            <span className="text-white/25 text-[10px] font-mono">
+              {data.meta.total_latency_ms}ms
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Loading skeleton */}
