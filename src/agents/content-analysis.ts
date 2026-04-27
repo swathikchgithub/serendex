@@ -31,21 +31,22 @@ export async function runContentAnalysisAgent(
 
   const model = getModel("content", modelId);
 
+  const isReasoningModel = modelId.toLowerCase().includes("r1");
+
   const result = await generateText({
     model,
     system: `You are the Content Analysis Agent for SERENDEX. Find 20 high-quality YouTube videos about: "${query}".
     Use search_youtube to find relevant content. Make 2-3 targeted searches with different angles (tutorials, deep dives, latest news) to maximize diversity.`,
     prompt: `Seed videos for reference: ${JSON.stringify(seedVideos.map((v) => ({ title: v.title, tags: v.tags })))}
     User's known topics: ${userTopics.join(", ") || "unknown"}.`,
-    tools: {
+    tools: isReasoningModel ? undefined : {
       search_youtube: tool({
         description: "Search YouTube for videos matching a query",
         parameters: z.object({
-          query: z.string().describe("Search query"),
-          max_results: z.number().optional().describe("Max results (default 20)"),
+          query: z.string().describe("The search query string"),
+          max_results: z.number().describe("The maximum number of results to return (default 20)")
         }),
-        execute: async (params: any) => {
-          const { query, max_results } = params;
+        execute: async ({ query, max_results }: { query: string; max_results?: number }) => {
           toolsCalled.push(`search_youtube:${query}`);
           const results = await searchYouTube(query, max_results ?? 20);
           allCandidates.push(...results);
@@ -55,10 +56,9 @@ export async function runContentAnalysisAgent(
       get_video_details: tool({
         description: "Get full details for specific video IDs",
         parameters: z.object({
-          video_ids: z.array(z.string()).describe("List of YouTube video IDs"),
+          video_ids: z.array(z.string()).describe("A list of YouTube video IDs")
         }),
-        execute: async (params: any) => {
-          const { video_ids } = params;
+        execute: async ({ video_ids }: { video_ids: string[] }) => {
           toolsCalled.push(`get_video_details:${video_ids.length} videos`);
           const results = await getVideoDetails(video_ids);
           allCandidates.push(...results);
@@ -66,8 +66,15 @@ export async function runContentAnalysisAgent(
         },
       } as any),
     },
-    maxSteps: 5,
+    maxSteps: isReasoningModel ? 1 : 5,
   } as any);
+
+  // If it's a reasoning model, it won't have tool results, so we do a fallback search
+  if (isReasoningModel && allCandidates.length === 0) {
+    toolsCalled.push("reasoning_fallback_search");
+    const fallbackResults = await searchYouTube(query, 20);
+    allCandidates.push(...fallbackResults);
+  }
 
   const finalReasoning = result.text;
 
