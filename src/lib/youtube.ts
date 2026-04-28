@@ -177,7 +177,7 @@ export async function getTrendingVideos(regionCode = "US", categoryId = "0"): Pr
   }));
 }
 
-function parseDuration(iso: string): string {
+export function parseDuration(iso: string): string {
   const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return "0:00";
   const h = parseInt(match[1] ?? "0");
