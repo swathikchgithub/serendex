@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
+import { SystemArchitectureDiagram } from "@/components/SystemArchitectureDiagram";
 
 export default function AboutPage() {
   return (
@@ -17,6 +18,8 @@ export default function AboutPage() {
             we use agentic reasoning to actively explore new horizons based on your latent interests.
           </p>
         </div>
+
+        <SystemArchitectureDiagram />
 
         {/* AI Reasoning Section */}
         <section className="mb-32">
@@ -104,27 +107,27 @@ export default function AboutPage() {
         <section className="mb-32">
           <div className="p-12 rounded-[40px] bg-gradient-to-b from-white/5 to-transparent border border-white/10">
              <h2 className="text-3xl font-bold mb-4">Technical Infrastructure</h2>
-             <p className="text-white/40 mb-12">Architecture optimized for reasoning-heavy workloads.</p>
+             <p className="text-white/40 mb-12">Architecture optimized for reasoning-heavy workloads and API quota efficiency.</p>
              
              <div className="space-y-12">
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                    <div className="flex-1">
-                      <h4 className="text-white font-bold mb-2">Vector Storage</h4>
-                      <p className="text-white/40 text-sm">Neon Postgres with the pgvector extension for high-dimensional similarity searches at scale.</p>
+                      <h4 className="text-white font-bold mb-2">Smart Caching Layer</h4>
+                      <p className="text-white/40 text-sm">Every discovery is cached in <strong>Upstash Redis</strong> with a smart TTL (24h-7d). This saves YouTube Quota and LLM tokens, making repeat searches near-instant.</p>
                    </div>
                    <div className="flex-1">
-                      <h4 className="text-white font-bold mb-2">Real-time Graph</h4>
-                      <p className="text-white/40 text-sm">Upstash Redis for millisecond-latency user profile updates and session management.</p>
+                      <h4 className="text-white font-bold mb-2">Safe Mode Fallback</h4>
+                      <p className="text-white/40 text-sm">A resilient design that automatically switches to curated mock data if YouTube API quotas are reached, ensuring zero application downtime.</p>
                    </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                    <div className="flex-1">
                       <h4 className="text-white font-bold mb-2">Edge Orchestration</h4>
-                      <p className="text-white/40 text-sm">Built with Next.js and deployed on Vercel, parallelizing agent calls at the edge for maximum speed.</p>
+                      <p className="text-white/40 text-sm">Built with Next.js and deployed on Vercel, parallelizing agent calls at the edge for maximum speed and sub-second analysis.</p>
                    </div>
                    <div className="flex-1">
                       <h4 className="text-white font-bold mb-2">Explainable Discovery</h4>
-                      <p className="text-white/40 text-sm">Every result is accompanied by a reasoning trace, explaining <em>why</em> the engine thought it was relevant to you.</p>
+                      <p className="text-white/40 text-sm">Every result is accompanied by a reasoning trace, explaining <em>why</em> the engine thought it was relevant to your interest graph.</p>
                    </div>
                 </div>
              </div>
