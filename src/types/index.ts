@@ -42,6 +42,7 @@ export interface RecommendationResponse {
     orchestrator_reasoning: string;
     diversity_score: number;
     traces: AgentTrace[];
+    is_cached?: boolean;
   };
 }
 

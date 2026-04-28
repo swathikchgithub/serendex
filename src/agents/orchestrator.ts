@@ -3,9 +3,8 @@ import { runUserProfilingAgent } from "./user-profiling";
 import { runTrendScoutAgent } from "./trend-scout";
 import { runDiversityGuardAgent } from "./diversity-guard";
 import { runExplanationAgent } from "./explanation";
+import { getCache, setCache } from "@/lib/redis";
 import type { Video, ScoredVideo, RecommendationResponse } from "@/types";
-
-import { getModel } from "@/lib/models";
 
 interface OrchestratorInput {
   userId: string;
@@ -17,6 +16,20 @@ interface OrchestratorInput {
 export async function runOrchestrator(input: OrchestratorInput): Promise<RecommendationResponse> {
   const start = Date.now();
   const { userId, seedVideos = [], searchQuery = "", modelId = "gpt-4o-mini" } = input;
+
+  // Step 0: Check for cached discovery results
+  const cacheKey = `orch:${userId}:${modelId}:${searchQuery.toLowerCase().replace(/\s+/g, "_")}`;
+  const cached = await getCache<RecommendationResponse>(cacheKey);
+  if (cached) {
+    return {
+      ...cached,
+      meta: {
+        ...cached.meta,
+        total_latency_ms: Date.now() - start,
+        is_cached: true,
+      }
+    };
+  }
 
   // Step 1: Run profiling first to determine strategy (fast — Redis only)
   const profilingResult = await runUserProfilingAgent(userId);
@@ -97,7 +110,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Recomme
     modelId
   );
 
-  return {
+  const result: RecommendationResponse = {
     recommendations: explained,
     meta: {
       agents_invoked: ["orchestrator", "content_analysis", "user_profiling", "trend_scout", "diversity_guard", "explanation"],
@@ -113,6 +126,11 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Recomme
       ],
     },
   };
+
+  // Cache for 1 hour
+  await setCache(cacheKey, result, 3600);
+
+  return result;
 }
 
 function computeUserRelevance(
