@@ -13,16 +13,22 @@ export async function runTrendScoutAgent(topicHints: string[]): Promise<TrendRes
   const toolsCalled: string[] = [];
 
   // Fetch trending + topic-based recent uploads in parallel
-  const fetches: Promise<Video[]>[] = [getTrendingVideos()];
-  toolsCalled.push("get_trending_videos");
-
-  for (const topic of topicHints.slice(0, 2)) {
-    fetches.push(
-      searchYouTube(`${topic} 2025`, 10).then((videos) => {
-        toolsCalled.push(`search_youtube:${topic}`);
-        return videos;
-      })
-    );
+  const fetches: Promise<Video[]>[] = [];
+  
+  // If we have specific topics, focus 100% on them to prevent "Global Trend Leakage"
+  if (topicHints.length > 0) {
+    for (const topic of topicHints.slice(0, 3)) {
+      fetches.push(
+        searchYouTube(`${topic} 2025 news`, 15).then((videos) => {
+          toolsCalled.push(`search_youtube:${topic}`);
+          return videos;
+        })
+      );
+    }
+  } else {
+    // Only fetch general trends if we have absolutely no context (pure discovery mode)
+    fetches.push(getTrendingVideos());
+    toolsCalled.push("get_trending_videos");
   }
 
   const results = await Promise.all(fetches);

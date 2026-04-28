@@ -92,12 +92,24 @@ export async function runContentAnalysisAgent(
   // Deduplicate candidates
   const unique = Array.from(new Map(allCandidates.map((v) => [v.video_id, v])).values());
 
-  if (unique.length === 0 || seedVideos.length === 0) {
+  if (unique.length === 0) {
     return {
       candidates: [],
       reasoning: finalReasoning || `Searched for: ${query}`,
       confidence: 0.3,
       trace: buildTrace("content_analysis", startedAt, toolsCalled, 0, 0.3, finalReasoning),
+    };
+  }
+
+  // If no seed videos, we can't do vector similarity against previous watches,
+  // so we treat the initial search results as highly relevant (score 0.8)
+  if (seedVideos.length === 0) {
+    const scored = unique.map((v) => ({ ...v, similarity_score: 0.8 }));
+    return {
+      candidates: scored,
+      reasoning: finalReasoning + " (Cold start: utilizing initial search results as baseline)",
+      confidence: 0.5,
+      trace: buildTrace("content_analysis", startedAt, toolsCalled, scored.length, 0.5, finalReasoning),
     };
   }
 
