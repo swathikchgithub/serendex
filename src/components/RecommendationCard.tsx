@@ -59,9 +59,24 @@ export function RecommendationCard({ video, onEvent }: Props) {
 
       {/* Content */}
       <div className="p-3 space-y-2">
-        <h3 className="text-white text-sm font-medium leading-snug line-clamp-2 group-hover:text-white/90">
-          {video.title}
-        </h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-white text-sm font-medium leading-snug line-clamp-2 group-hover:text-white/90">
+            {video.title}
+          </h3>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${video.video_id}`);
+              alert("Video link copied!");
+            }}
+            className="shrink-0 p-1 rounded-md text-white/20 hover:text-white hover:bg-white/10 transition-all"
+            title="Copy YouTube Link"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 100 6 3 3 0 000-6z" />
+            </svg>
+          </button>
+        </div>
         <p className="text-white/50 text-xs">{video.channel}</p>
 
         {/* Explanation badge */}

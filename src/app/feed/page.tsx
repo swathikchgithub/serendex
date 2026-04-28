@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { AgentTracePanel } from "@/components/AgentTrace";
 import { Header } from "@/components/Header";
+import { AgentDiscoveryProgress } from "@/components/AgentDiscoveryProgress";
 import { MODELS } from "@/lib/models";
 import type { RecommendationResponse } from "@/types";
 
@@ -101,6 +102,16 @@ function FeedContent() {
                   >
                     {showTrace ? "Hide" : "Show"} Trace
                   </button>
+
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert("Discovery link copied to clipboard!");
+                    }}
+                    className="text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border border-white/10 text-white/30 hover:text-white/60 hover:bg-white/5 transition-all flex items-center gap-1"
+                  >
+                    Share
+                  </button>
                 </div>
 
                 <h2 className="text-lg font-medium text-white/90 leading-relaxed">
@@ -134,20 +145,7 @@ function FeedContent() {
 
         {/* Loading */}
         {loading && (
-          <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <div className="flex gap-2">
-              {["🧠", "⚡", "👤", "📈", "🛡️", "💬"].map((icon, i) => (
-                <span
-                  key={i}
-                  className="text-2xl animate-bounce"
-                  style={{ animationDelay: `${i * 0.1}s` }}
-                >
-                  {icon}
-                </span>
-              ))}
-            </div>
-            <p className="text-white/40 text-sm">Agents working in parallel...</p>
-          </div>
+          <AgentDiscoveryProgress />
         )}
 
         {/* Error */}
