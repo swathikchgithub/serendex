@@ -41,3 +41,14 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 export async function saveUserProfile(profile: UserProfile): Promise<void> {
   await getRedis().set(PROFILE_KEY(profile.user_id), JSON.stringify(profile), { ex: HISTORY_TTL });
 }
+
+export async function getCache<T>(key: string): Promise<T | null> {
+  const data = await getRedis().get(`cache:${key}`);
+  if (!data) return null;
+  return typeof data === "string" ? JSON.parse(data) : (data as T);
+}
+
+export async function setCache(key: string, value: any, ttlSeconds = 3600 * 24): Promise<void> {
+  await getRedis().set(`cache:${key}`, JSON.stringify(value), { ex: ttlSeconds });
+}
+

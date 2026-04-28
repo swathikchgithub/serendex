@@ -1,3 +1,4 @@
+import { getCache, setCache } from "./redis";
 import type { Video } from "@/types";
 
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
@@ -7,6 +8,10 @@ function getApiKey() {
 }
 
 export async function searchYouTube(query: string, maxResults = 20): Promise<Video[]> {
+  const cacheKey = `yt_search:${query.toLowerCase().replace(/\s+/g, "_")}`;
+  const cached = await getCache<Video[]>(cacheKey);
+  if (cached) return cached;
+
   const url = new URL(`${YOUTUBE_API_BASE}/search`);
   url.searchParams.set("part", "snippet");
   url.searchParams.set("q", query);
@@ -18,16 +23,24 @@ export async function searchYouTube(query: string, maxResults = 20): Promise<Vid
   const data = await res.json();
 
   if (!res.ok) {
+    if (res.status === 403) throw new Error("YouTube API Quota Exceeded. Please try again tomorrow or add a new API Key.");
     throw new Error(data.error?.message || `YouTube search error ${res.status}`);
   }
 
   if (!data.items) return [];
 
   const videoIds = data.items.map((i: { id: { videoId: string } }) => i.id.videoId).join(",");
-  return getVideoDetails(videoIds.split(","));
+  const results = await getVideoDetails(videoIds.split(","));
+  
+  await setCache(cacheKey, results, 3600 * 24); // Cache searches for 24h
+  return results;
 }
 
 export async function getVideoDetails(videoIds: string[]): Promise<Video[]> {
+  const cacheKey = `yt_details:${videoIds.sort().join(",")}`;
+  const cached = await getCache<Video[]>(cacheKey);
+  if (cached) return cached;
+
   const url = new URL(`${YOUTUBE_API_BASE}/videos`);
   url.searchParams.set("part", "snippet,contentDetails,statistics");
   url.searchParams.set("id", videoIds.join(","));
@@ -42,7 +55,7 @@ export async function getVideoDetails(videoIds: string[]): Promise<Video[]> {
 
   if (!data.items) return [];
 
-  return data.items.map((item: {
+  const results = data.items.map((item: {
     id: string;
     snippet: {
       title: string;
@@ -67,6 +80,9 @@ export async function getVideoDetails(videoIds: string[]): Promise<Video[]> {
     duration: parseDuration(item.contentDetails.duration),
     view_count: parseInt(item.statistics.viewCount ?? "0"),
   }));
+
+  await setCache(cacheKey, results, 3600 * 24 * 7); // Cache video info for 7 days
+  return results;
 }
 
 export async function getTrendingVideos(regionCode = "US", categoryId = "0"): Promise<Video[]> {
