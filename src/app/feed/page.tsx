@@ -8,6 +8,7 @@ import { AgentTracePanel } from "@/components/AgentTrace";
 import { Header } from "@/components/Header";
 import { AgentDiscoveryProgress } from "@/components/AgentDiscoveryProgress";
 import { MODELS } from "@/lib/models";
+import { DEMO_SCENARIOS } from "@/lib/demo-data";
 import type { RecommendationResponse } from "@/types";
 
 // Extracted into its own component so it can be wrapped in <Suspense>
@@ -27,6 +28,17 @@ function FeedContent() {
   }, []);
 
   const fetchRecommendations = useCallback(async () => {
+    const demoKey = searchParams.get("demo");
+    if (demoKey && DEMO_SCENARIOS[demoKey]) {
+      setLoading(true);
+      setError(null);
+      setTimeout(() => {
+        setData(DEMO_SCENARIOS[demoKey]);
+        setLoading(false);
+      }, 2000);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {

@@ -125,6 +125,45 @@ export default function Home() {
           })}
         </div>
       </div>
+      <div className="mt-20 w-full max-w-4xl">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
+          <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-bold">Deep Discovery Scenarios</p>
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button 
+            onClick={() => router.push("/feed?q=Quantum+Computing&demo=quantum-computing")}
+            className="group relative p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-violet-500/50 hover:bg-violet-500/5 transition-all text-left overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-4 text-4xl opacity-10 group-hover:opacity-20 transition-opacity">⚛️</div>
+            <h3 className="text-white font-bold mb-2">The Quantum Path</h3>
+            <p className="text-white/40 text-xs leading-relaxed">
+              Watch agents break down one of the hardest topics in science into a logical learning journey.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">Reasoning Chain</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 text-white/40">3 Agents</span>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => router.push("/feed?q=Minimalist+Design&demo=minimalist-design")}
+            className="group relative p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all text-left overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-4 text-4xl opacity-10 group-hover:opacity-20 transition-opacity">📏</div>
+            <h3 className="text-white font-bold mb-2">Design Philosophy</h3>
+            <p className="text-white/40 text-xs leading-relaxed">
+              Discover the connection between productivity and minimalist design through serendipitous matching.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Serendipity Agent</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 text-white/40">2 Agents</span>
+            </div>
+          </button>
+        </div>
+      </div>
     </main>
   );
 }
