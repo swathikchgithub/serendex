@@ -54,7 +54,38 @@ export const DEMO_SCENARIOS: Record<string, RecommendationResponse> = {
       total_latency_ms: 1240,
       orchestrator_reasoning: "The goal is to move from conceptual understanding (babies) to landscape mapping (domain of science) and finally to practical application (IBM). This multi-step path ensures deep retention of Quantum principles.",
       diversity_score: 0.88,
-      traces: [],
+      traces: [
+        { 
+          agent: "Content Analysis", 
+          started_at: new Date().toISOString(), 
+          completed_at: new Date().toISOString(), 
+          latency_ms: 320, 
+          tools_called: ["search_youtube", "analyze_metadata"], 
+          reasoning: "Analyzing candidate pool for quantum fundamentals. Found high-quality match with Chris Ferrie's intro.",
+          output_count: 12,
+          confidence: 0.95
+        },
+        { 
+          agent: "User Profiling", 
+          started_at: new Date().toISOString(), 
+          completed_at: new Date().toISOString(), 
+          latency_ms: 150, 
+          tools_called: ["get_profile", "calculate_relevance"], 
+          reasoning: "Identified preference for structured learning paths. Re-ranking results to prioritize foundational concepts first.",
+          output_count: 8,
+          confidence: 0.92
+        },
+        { 
+          agent: "Trend Scout", 
+          started_at: new Date().toISOString(), 
+          completed_at: new Date().toISOString(), 
+          latency_ms: 450, 
+          tools_called: ["get_trends"], 
+          reasoning: "Detecting spike in 'Quantum Computing' interest in tech hubs. Adding IBM practical lab to the mix.",
+          output_count: 5,
+          confidence: 0.88
+        }
+      ],
       is_cached: true
     }
   },
@@ -77,11 +108,22 @@ export const DEMO_SCENARIOS: Record<string, RecommendationResponse> = {
       }
     ],
     meta: {
-      agents_invoked: ["content_analysis", "user_profiling"],
+      agents_invoked: ["content_analysis", "user_profiling", "serendipity_agent"],
       total_latency_ms: 850,
       orchestrator_reasoning: "Since you frequently search for productivity tools, the engine identifies 'Minimalist Philosophy' as the aesthetic foundation for the tools you use.",
       diversity_score: 0.92,
-      traces: [],
+      traces: [
+        { 
+          agent: "Content Analysis", 
+          started_at: new Date().toISOString(), 
+          completed_at: new Date().toISOString(), 
+          latency_ms: 200, 
+          tools_called: ["analyze_metadata"], 
+          reasoning: "Found Dieter Rams retrospective. High alignment with 'Productivity' aesthetic.",
+          output_count: 5,
+          confidence: 0.98
+        }
+      ],
       is_cached: true
     }
   }
