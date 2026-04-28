@@ -1,20 +1,10 @@
 import Link from "next/link";
+import { Header } from "@/components/Header";
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-violet-500/30">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/5 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="font-black text-xl hover:opacity-80 transition-opacity">
-            SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>
-          </Link>
-          <nav className="flex items-center gap-6">
-            <Link href="/" className="text-sm text-white/60 hover:text-white transition-colors">Home</Link>
-            <Link href="/about" className="text-sm text-white font-medium">How it works</Link>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-5xl mx-auto px-6 py-16 md:py-24">
         {/* Hero Section */}

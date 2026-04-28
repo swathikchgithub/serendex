@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { AgentTracePanel } from "@/components/AgentTrace";
+import { Header } from "@/components/Header";
 import { MODELS } from "@/lib/models";
 import type { RecommendationResponse } from "@/types";
 
@@ -63,60 +64,45 @@ function FeedContent() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-black/80 backdrop-blur border-b border-white/10 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="font-black text-xl hover:opacity-80 transition-opacity">
-            SEREN<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">DEX</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <select
-              value={modelId}
-              onChange={(e) => {
-                const val = e.target.value;
-                setModelId(val);
-                localStorage.setItem("serendex_model", val);
-              }}
-              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/70 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter max-w-[140px]"
-            >
-              {MODELS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-            {data?.meta && (
-              <span className="text-white/30 text-xs font-mono">
-                {data.meta.total_latency_ms}ms · {data.recommendations.length} results
-              </span>
-            )}
-            <button
-              onClick={() => setShowTrace(!showTrace)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${showTrace ? "border-violet-500/50 bg-violet-500/10 text-violet-300" : "border-white/10 text-white/40 hover:text-white/60"}`}
-            >
-              {showTrace ? "Hide" : "Show"} Agent Trace
-            </button>
-            <Link 
-              href="/about"
-              className="text-xs text-white/40 hover:text-white transition-colors"
-            >
-              How it works
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Discovery Summary */}
         {data && !loading && !error && (
           <div className="mb-8 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm animate-in fade-in slide-in-from-top-4 duration-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-2 max-w-2xl">
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-violet-400">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
-                  </span>
-                  Discovery Insights
+              <div className="space-y-4 max-w-2xl">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-violet-400 bg-violet-400/10 px-2 py-1 rounded-md">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                    </span>
+                    Discovery Insights
+                  </div>
+                  
+                  <select
+                    value={modelId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setModelId(val);
+                      localStorage.setItem("serendex_model", val);
+                    }}
+                    className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[9px] text-white/50 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter"
+                  >
+                    {MODELS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => setShowTrace(!showTrace)}
+                    className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border transition-all ${showTrace ? "border-violet-500/50 bg-violet-500/10 text-violet-300" : "border-white/10 text-white/30 hover:text-white/60"}`}
+                  >
+                    {showTrace ? "Hide" : "Show"} Trace
+                  </button>
                 </div>
+
                 <h2 className="text-lg font-medium text-white/90 leading-relaxed">
                   {data.meta.orchestrator_reasoning}
                 </h2>

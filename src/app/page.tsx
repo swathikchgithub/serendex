@@ -94,18 +94,35 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="mt-10 text-center">
-        <p className="text-white/20 text-xs mb-4">Try these</p>
+      <div className="mt-10 text-center w-full max-w-2xl">
+        <p className="text-white/20 text-[10px] uppercase tracking-[0.2em] font-bold mb-4">Personalize your Engine</p>
         <div className="flex flex-wrap gap-2 justify-center">
-          {["machine learning", "system design", "startup advice", "physics", "cooking"].map((topic) => (
-            <button
-              key={topic}
-              onClick={() => router.push(`/feed?q=${encodeURIComponent(topic)}`)}
-              className="text-sm text-white/50 hover:text-white border border-white/10 hover:border-white/20 rounded-lg px-3 py-1.5 transition-all"
-            >
-              {topic}
-            </button>
-          ))}
+          {[
+            "Artificial Intelligence", "Coding", "Space", "Cooking", "Finance", 
+            "Philosophy", "Nature", "Music Theory", "History", "Physics"
+          ].map((topic) => {
+            const isSelected = query.toLowerCase().includes(topic.toLowerCase());
+            return (
+              <button
+                key={topic}
+                onClick={async () => {
+                  const uid = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
+                  localStorage.setItem("serendex_uid", uid);
+                  
+                  // Optimistic UI or just quick set
+                  setQuery(topic);
+                  await fetch("/api/profile", {
+                    method: "POST",
+                    body: JSON.stringify({ user_id: uid, interests: [topic] })
+                  });
+                  router.push(`/feed?q=${encodeURIComponent(topic)}`);
+                }}
+                className="text-xs text-white/50 hover:text-white border border-white/10 hover:border-violet-500/50 hover:bg-violet-500/5 rounded-full px-4 py-2 transition-all"
+              >
+                + {topic}
+              </button>
+            );
+          })}
         </div>
       </div>
     </main>
