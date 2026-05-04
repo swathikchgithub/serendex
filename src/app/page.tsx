@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MODELS } from "@/lib/models";
+import { MODELS } from "@/lib/models-list";
 
 export default function Home() {
   const [query, setQuery] = useState("");

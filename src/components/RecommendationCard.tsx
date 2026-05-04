@@ -39,7 +39,7 @@ export function RecommendationCard({ video, onEvent }: Props) {
       onClick={handleClick}
     >
       {/* Thumbnail */}
-      <div className="relative aspect-video bg-black/40 overflow-hidden">
+      <div className="relative aspect-video bg-black/40 overflow-hidden min-w-[120px] min-h-[70px]">
         {video.thumbnail ? (
           <img
             src={video.thumbnail}
@@ -47,12 +47,16 @@ export function RecommendationCard({ video, onEvent }: Props) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-white/20 text-4xl">▶</div>
+          <div className="w-full h-full flex items-center justify-center text-white/20 text-4xl">
+            <svg className="w-8 h-8 opacity-20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
         )}
-        <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded">
+        <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded">
           {video.duration}
         </div>
-        <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded font-mono">
+        <div className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded font-mono border border-white/10">
           {scorePercent}%
         </div>
       </div>
@@ -67,20 +71,20 @@ export function RecommendationCard({ video, onEvent }: Props) {
             onClick={(e) => {
               e.stopPropagation();
               navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${video.video_id}`);
-              alert("Video link copied!");
+              alert("YouTube link copied!");
             }}
             className="shrink-0 p-1 rounded-md text-white/20 hover:text-white hover:bg-white/10 transition-all"
             title="Copy YouTube Link"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 100 6 3 3 0 000-6z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </button>
         </div>
-        <p className="text-white/50 text-xs">{video.channel}</p>
+        <p className="text-white/50 text-[10px]">{video.channel}</p>
 
         {/* Explanation badge */}
-        <div className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border ${EXPLANATION_COLORS[video.explanation_type]}`}>
+        <div className={`inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${EXPLANATION_COLORS[video.explanation_type]}`}>
           <span>{EXPLANATION_LABELS[video.explanation_type]}</span>
         </div>
 
@@ -92,12 +96,17 @@ export function RecommendationCard({ video, onEvent }: Props) {
         )}
 
         {/* Score bars */}
-        <div className="space-y-1 pt-1">
+        <div className="space-y-1 pt-1 border-t border-white/5">
+          <div className="flex items-center justify-between mb-1">
+             <span className="text-[9px] text-white/20 uppercase tracking-widest font-bold">AI Discovery Scores</span>
+             <span className="text-[9px] text-white/20 italic">Agentic Metrics</span>
+          </div>
           <ScoreBar label="Content" value={video.scores.content_similarity} color="bg-blue-400" />
           <ScoreBar label="Trend" value={video.scores.trend_score} color="bg-orange-400" />
           <ScoreBar label="Relevance" value={video.scores.user_relevance} color="bg-purple-400" />
         </div>
       </div>
+
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { RecommendationCard } from "@/components/RecommendationCard";
 import { AgentTracePanel } from "@/components/AgentTrace";
 import { Header } from "@/components/Header";
 import { AgentDiscoveryProgress } from "@/components/AgentDiscoveryProgress";
-import { MODELS } from "@/lib/models";
+import { MODELS } from "@/lib/models-list";
 import { DEMO_SCENARIOS } from "@/lib/demo-data";
 import type { RecommendationResponse } from "@/types";
 

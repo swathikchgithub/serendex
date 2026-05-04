@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MODELS } from "@/lib/models";
+import { MODELS } from "@/lib/models-list";
 import type { RecommendationResponse, ScoredVideo } from "@/types";
 
 const EXPLANATION_COLORS: Record<ScoredVideo["explanation_type"], string> = {
