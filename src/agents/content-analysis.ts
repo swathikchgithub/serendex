@@ -175,19 +175,16 @@ export async function runContentAnalysisAgent(
   let dbResults: (Video & { similarity_score: number })[] = [];
   if (seedEmbeddings.length > 0) {
     const dbHits = await vectorSearch(seedEmbeddings[0], 10, unique.map((v) => v.video_id));
-    dbResults = dbHits.map((h) => ({
-      video_id: h.video_id,
-      title: h.title,
-      thumbnail: "",
-      channel: "",
-      channel_id: h.channel_id,
-      description: "",
-      tags: [],
-      published_at: "",
-      duration: "",
-      view_count: 0,
-      similarity_score: h.similarity,
-    }));
+    if (dbHits.length > 0) {
+      const hitDetails = await getVideoDetails(dbHits.map((h) => h.video_id));
+      dbResults = hitDetails.map((video) => {
+        const hit = dbHits.find((h) => h.video_id === video.video_id);
+        return {
+          ...video,
+          similarity_score: hit ? hit.similarity : 0,
+        };
+      });
+    }
   }
 
   const scored = [

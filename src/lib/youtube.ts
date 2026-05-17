@@ -53,7 +53,7 @@ const MOCK_VIDEOS: Video[] = [
     channel_id: "UCserendex",
     duration: "12:45",
     view_count: 1250000,
-    published_at: new Date().toISOString(),
+    published_at: "2024-01-15T08:00:00Z",
     description: "In this deep dive, we explore how autonomous agents are reshaping the digital landscape. From LLMs to recursive self-improvement.",
     tags: ["AI", "Agents", "Future", "Technology"]
   },
@@ -65,7 +65,7 @@ const MOCK_VIDEOS: Video[] = [
     channel_id: "UCscale",
     duration: "24:10",
     view_count: 850000,
-    published_at: new Date().toISOString(),
+    published_at: "2023-11-20T14:30:00Z",
     description: "Learn how to build systems that handle millions of requests per second using distributed databases and microservices architecture.",
     tags: ["System Design", "Engineering", "Backend", "Scale"]
   },
@@ -77,7 +77,7 @@ const MOCK_VIDEOS: Video[] = [
     channel_id: "UCthoughts",
     duration: "18:30",
     view_count: 450000,
-    published_at: new Date().toISOString(),
+    published_at: "2023-06-05T09:15:00Z",
     description: "What does it mean to 'know' something? We explore the history of scientific discovery and the limits of human understanding.",
     tags: ["Philosophy", "Science", "Discovery", "History"]
   }

@@ -149,7 +149,7 @@ export function VideoSidebar({ seedVideoId }: Props) {
           className="group flex gap-3 text-left w-full hover:bg-white/5 rounded-xl p-2 -mx-2 transition-all"
         >
           {/* Thumbnail */}
-          <div className="relative flex-shrink-0 w-28 aspect-video rounded-lg overflow-hidden bg-black/40">
+          <div className="relative flex-shrink-0 w-32 min-h-[72px] aspect-video rounded-lg overflow-hidden bg-black/40">
             {video.thumbnail ? (
               <img
                 src={video.thumbnail}
