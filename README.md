@@ -4,7 +4,7 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/swathikchgithub/serendex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](./LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![Powered by Claude](https://img.shields.io/badge/Powered%20by-Claude%20Sonnet-orange)](https://anthropic.com)
 
 ---
@@ -60,6 +60,8 @@ CONTENT ANALYSIS   USER PROFILING    TREND SCOUT
 - **Agent Trace UI** — see every agent's reasoning chain live (great for demos)
 - **pgvector ANN search** — embeddings persist and improve recommendations over time
 - **Filter bubble prevention** — Diversity Guard enforces hard constraints
+- **Multi-model support** — swap between OpenAI, Claude, Gemini, Groq, Llama, DeepSeek and more at runtime
+- **Rate limiting** — Redis-backed per-user rate limit (20 req/min) protects YouTube quota
 - **Vercel-native** — deploys in one click
 
 ---
@@ -68,7 +70,7 @@ CONTENT ANALYSIS   USER PROFILING    TREND SCOUT
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 14 App Router |
+| Framework | Next.js 16 App Router |
 | Agents | Anthropic Claude API (tool use) |
 | Embeddings | Voyage AI `voyage-2` |
 | Vector DB | Vercel Postgres + pgvector |
@@ -95,14 +97,20 @@ cp .env.local.example .env.local
 
 Fill in your keys:
 
-| Variable | Where to get it |
-|---|---|
-| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
-| `YOUTUBE_API_KEY` | [Google Cloud Console](https://console.cloud.google.com) → YouTube Data API v3 |
-| `VOYAGE_API_KEY` | [voyageai.com](https://www.voyageai.com) — free 50M tokens |
-| `UPSTASH_REDIS_REST_URL` | [upstash.com](https://upstash.com) → Create database → REST API |
-| `UPSTASH_REDIS_REST_TOKEN` | Same as above |
-| `POSTGRES_URL` | Vercel Dashboard → Storage → Create Postgres database |
+| Variable | Required | Where to get it |
+|---|---|---|
+| `YOUTUBE_API_KEY` | ✅ | [Google Cloud Console](https://console.cloud.google.com) → YouTube Data API v3 |
+| `VOYAGE_API_KEY` | ✅ | [voyageai.com](https://www.voyageai.com) — free 50M tokens |
+| `UPSTASH_REDIS_REST_URL` | ✅ | [upstash.com](https://upstash.com) → Create database → REST API |
+| `UPSTASH_REDIS_REST_TOKEN` | ✅ | Same as above |
+| `POSTGRES_URL` | ✅ | Vercel Dashboard → Storage → Create Postgres database |
+| `ANTHROPIC_API_KEY` | Provider | [console.anthropic.com](https://console.anthropic.com) — for Claude models |
+| `OPENAI_API_KEY` | Provider | [platform.openai.com](https://platform.openai.com) — for GPT models |
+| `GROQ_API_KEY` | Provider | [console.groq.com](https://console.groq.com) — for Llama / Mixtral via Groq |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Provider | [aistudio.google.com](https://aistudio.google.com) — for Gemini models |
+| `OPENROUTER_API_KEY` | Provider | [openrouter.ai](https://openrouter.ai) — for DeepSeek, Llama 4, and more |
+
+> At least one **Provider** key is required. `gpt-4o-mini` (OpenAI) is the default model.
 
 ### 3. Run locally
 
@@ -155,10 +163,19 @@ POSTGRES_URL             → Auto-added by Vercel Postgres integration
 ### `GET /api/recommendations`
 
 ```
-GET /api/recommendations?user_id=xyz&q=machine+learning&seed_video_id=abc
+GET /api/recommendations?user_id=xyz&q=machine+learning&seed_video_id=abc&model=gpt-4o-mini
 ```
 
+| Param | Required | Description |
+|---|---|---|
+| `user_id` | No | Stable user identifier (UUID). Defaults to `"anonymous"`. |
+| `q` | No | Free-text search query |
+| `seed_video_id` | No | YouTube video ID to seed recommendations from |
+| `model` | No | Model ID from the supported list. Defaults to `gpt-4o-mini`. |
+
 Returns 15 ranked video recommendations with agent reasoning traces.
+
+Rate limited to **20 requests per minute per user**. Exceeding the limit returns `429` with `X-RateLimit-Remaining: 0`.
 
 ### `POST /api/events`
 
