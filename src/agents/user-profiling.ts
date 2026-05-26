@@ -1,5 +1,6 @@
 import { getUserHistory, getUserProfile, saveUserProfile } from "@/lib/redis";
-import type { UserProfile, WatchEvent, AgentTrace } from "@/types";
+import { getVideoDetails } from "@/lib/youtube";
+import type { UserProfile, Video, WatchEvent, AgentTrace } from "@/types";
 
 interface ProfilingResult {
   profile: UserProfile;
@@ -33,14 +34,23 @@ export async function runUserProfilingAgent(userId: string): Promise<ProfilingRe
   const isColdStart = history.length < 3;
 
   if (isColdStart) {
-    const emptyProfile: UserProfile = coldStartProfile(userId);
     return {
-      profile: emptyProfile,
+      profile: coldStartProfile(userId),
       top_topics: [],
       is_cold_start: true,
       confidence: 0.1,
       trace: buildTrace(startedAt, ["get_user_history"], 0, 0.1, "Cold start — insufficient history"),
     };
+  }
+
+  // Fetch video metadata for history so we can extract real topics (all hits cached)
+  const uniqueVideoIds = [...new Set(history.map((e) => e.video_id))];
+  let videoMetaMap = new Map<string, Video>();
+  try {
+    const videos = await getVideoDetails(uniqueVideoIds);
+    videoMetaMap = new Map(videos.map((v) => [v.video_id, v]));
+  } catch {
+    // Metadata unavailable — profile will fall back to video-ID proxy keys
   }
 
   // Build interest graph from watch history
@@ -60,9 +70,10 @@ export async function runUserProfilingAgent(userId: string): Promise<ProfilingRe
     if (profile.interest_graph[topic] < 0.01) delete profile.interest_graph[topic];
   }
 
-  // Process new events
+  // Process new events with real video metadata
   for (const event of history) {
-    updateProfileFromEvent(profile, event);
+    const videoMeta = videoMetaMap.get(event.video_id);
+    updateProfileFromEvent(profile, event, videoMeta);
   }
 
   profile.last_updated = new Date().toISOString();
@@ -82,7 +93,7 @@ export async function runUserProfilingAgent(userId: string): Promise<ProfilingRe
     confidence,
     trace: buildTrace(
       startedAt,
-      ["get_user_history", "get_user_profile", "save_user_profile"],
+      ["get_user_history", "get_user_profile", "get_video_details", "save_user_profile"],
       history.length,
       confidence,
       `Processed ${history.length} events. Top interests: ${topTopics.join(", ")}`
@@ -90,12 +101,34 @@ export async function runUserProfilingAgent(userId: string): Promise<ProfilingRe
   };
 }
 
-function updateProfileFromEvent(profile: UserProfile, event: WatchEvent): void {
+const TOPIC_STOPWORDS = new Set([
+  "the", "a", "an", "is", "in", "on", "how", "why", "what", "with",
+  "for", "of", "to", "and", "or", "my", "your", "this", "that",
+]);
+
+function extractTopicsFromVideo(video: Video): string[] {
+  // Tags are the best signal — normalise and use them directly
+  const fromTags = video.tags
+    .slice(0, 5)
+    .map((t) => t.toLowerCase().replace(/\s+/g, "_"));
+
+  if (fromTags.length > 0) return fromTags;
+
+  // Fall back to significant words in the title
+  const fromTitle = video.title
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .split(" ")
+    .filter((w) => w.length > 3 && !TOPIC_STOPWORDS.has(w))
+    .slice(0, 3);
+
+  return fromTitle.length > 0 ? fromTitle : [`video_${video.video_id.slice(0, 8)}`];
+}
+
+function updateProfileFromEvent(profile: UserProfile, event: WatchEvent, videoMeta?: Video): void {
   const weight = eventWeight(event);
   if (weight === 0) return;
 
-  // We don't have video metadata here — in production, fetch from cache
-  // For now, use video_id as a proxy topic key
   if (event.event_type === "dislike" || event.event_type === "skip") {
     if (!profile.negative_signals.includes(event.video_id)) {
       profile.negative_signals.push(event.video_id);
@@ -103,8 +136,15 @@ function updateProfileFromEvent(profile: UserProfile, event: WatchEvent): void {
     return;
   }
 
-  const topic = `video_${event.video_id.slice(0, 8)}`; // placeholder until we have metadata
-  profile.interest_graph[topic] = (profile.interest_graph[topic] ?? 0) + weight;
+  const topics = videoMeta
+    ? extractTopicsFromVideo(videoMeta)
+    : [`video_${event.video_id.slice(0, 8)}`];
+
+  // Distribute the weight evenly across all topics for this video
+  const perTopicWeight = weight / topics.length;
+  for (const topic of topics) {
+    profile.interest_graph[topic] = (profile.interest_graph[topic] ?? 0) + perTopicWeight;
+  }
 }
 
 function eventWeight(event: WatchEvent): number {

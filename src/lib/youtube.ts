@@ -97,6 +97,10 @@ export async function getVideoDetails(videoIds: string[]): Promise<Video[]> {
   const data = await res.json();
 
   if (!res.ok) {
+    if (res.status === 403) {
+      console.warn("YouTube Quota Exceeded in getVideoDetails. Returning empty.");
+      return [];
+    }
     throw new Error(data.error?.message || `YouTube details error ${res.status}`);
   }
 

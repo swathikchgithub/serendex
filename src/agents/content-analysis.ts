@@ -77,7 +77,7 @@ export async function runContentAnalysisAgent(
   let finalReasoning = "";
 
   try {
-    const { text } = await (generateText as any)({
+    const { text } = await generateText({
       model,
       system: `You are the Content Analysis Agent for SERENDEX. Your goal is to find 20 high-quality YouTube videos about: "${query}".
       

@@ -1,10 +1,16 @@
 import { neon } from "@neondatabase/serverless";
 
-// Lazy init — only connects at runtime when POSTGRES_URL is available,
+type NeonClient = ReturnType<typeof neon>;
+let _db: NeonClient | null = null;
+
+// Lazy singleton — only connects at runtime when POSTGRES_URL is available,
 // not during Next.js static build analysis.
-function getDb() {
-  if (!process.env.POSTGRES_URL) throw new Error("POSTGRES_URL is not set");
-  return neon(process.env.POSTGRES_URL);
+function getDb(): NeonClient {
+  if (!_db) {
+    if (!process.env.POSTGRES_URL) throw new Error("POSTGRES_URL is not set");
+    _db = neon(process.env.POSTGRES_URL);
+  }
+  return _db;
 }
 
 export async function setupSchema(): Promise<void> {

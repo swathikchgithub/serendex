@@ -33,9 +33,12 @@ export function runDiversityGuardAgent(candidates: ScoredVideo[]): DiversityResu
 
     if (video.explanation_type === "serendipitous") newTerritoryCount++;
 
-    // Add diversity score to the video
-    video.scores.diversity_score = computeVideoDiversityScore(video, final);
-    final.push(video);
+    // Add diversity score without mutating the original object
+    const scored = {
+      ...video,
+      scores: { ...video.scores, diversity_score: computeVideoDiversityScore(video, final) },
+    };
+    final.push(scored);
   }
 
   // Ensure minimum new territory

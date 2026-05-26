@@ -34,32 +34,36 @@ export function VideoSidebar({ seedVideoId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelId] = useState<string>("gpt-4o-mini");
 
+  // Hydrate model from localStorage after mount (localStorage unavailable on server)
   useEffect(() => {
-    let userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
+    const saved = localStorage.getItem("serendex_model");
+    if (saved) setModelId(saved);
+  }, []);
+
+  // Log a watch event only when the seed video changes
+  useEffect(() => {
+    const userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
     localStorage.setItem("serendex_uid", userId);
 
-    // Log a watch event for the current video
     fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId,
-        video_id: seedVideoId,
-        event_type: "watch",
-      }),
+      body: JSON.stringify({ user_id: userId, video_id: seedVideoId, event_type: "watch" }),
     }).catch(() => {});
+  }, [seedVideoId]);
 
-    // Fetch recommendations seeded by this video
-    const savedModel = localStorage.getItem("serendex_model") ?? "gpt-4o-mini";
-    setModelId(savedModel);
+  // Fetch recommendations whenever seed video or model changes
+  useEffect(() => {
+    const userId = localStorage.getItem("serendex_uid") ?? "anonymous";
 
+    setData(null);
     setError(null);
-    fetch(`/api/recommendations?user_id=${userId}&seed_video_id=${seedVideoId}&model=${savedModel}`)
+    setLoading(true);
+
+    fetch(`/api/recommendations?user_id=${userId}&seed_video_id=${seedVideoId}&model=${modelId}`)
       .then(async (r) => {
         const json = await r.json();
-        if (!r.ok) {
-          throw new Error(json.error ?? `Server error ${r.status}`);
-        }
+        if (!r.ok) throw new Error(json.error ?? `Server error ${r.status}`);
         return json;
       })
       .then((json) => {
@@ -70,7 +74,7 @@ export function VideoSidebar({ seedVideoId }: Props) {
         console.error(err);
       })
       .finally(() => setLoading(false));
-  }, [seedVideoId]);
+  }, [seedVideoId, modelId]);
 
   const handleClick = (videoId: string) => {
     const userId = localStorage.getItem("serendex_uid");
@@ -97,8 +101,6 @@ export function VideoSidebar({ seedVideoId }: Props) {
               const val = e.target.value;
               setModelId(val);
               localStorage.setItem("serendex_model", val);
-              // Force refresh
-              window.location.reload();
             }}
             className="bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.5 text-[9px] text-white/40 focus:outline-none hover:bg-white/10 transition-colors uppercase font-bold tracking-tighter max-w-[100px]"
           >

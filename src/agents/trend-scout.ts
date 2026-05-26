@@ -16,10 +16,11 @@ export async function runTrendScoutAgent(topicHints: string[]): Promise<TrendRes
   const fetches: Promise<Video[]>[] = [];
   
   // If we have specific topics, focus 100% on them to prevent "Global Trend Leakage"
+  const currentYear = new Date().getFullYear();
   if (topicHints.length > 0) {
     for (const topic of topicHints.slice(0, 3)) {
       fetches.push(
-        searchYouTube(`${topic} 2025 news`, 15).then((videos) => {
+        searchYouTube(`${topic} ${currentYear} news`, 15).then((videos) => {
           toolsCalled.push(`search_youtube:${topic}`);
           return videos;
         })

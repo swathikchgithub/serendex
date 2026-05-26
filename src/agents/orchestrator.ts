@@ -18,7 +18,8 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Recomme
   const { userId, seedVideos = [], searchQuery = "", modelId = "gpt-4o-mini" } = input;
 
   // Step 0: Check for cached discovery results
-  const cacheKey = `orch:${userId}:${modelId}:${searchQuery.toLowerCase().replace(/\s+/g, "_")}`;
+  const seedKey = seedVideos.map((v) => v.video_id).sort().join(",");
+  const cacheKey = `orch:${userId}:${modelId}:${seedKey}:${searchQuery.toLowerCase().replace(/\s+/g, "_")}`;
   const cached = await getCache<RecommendationResponse>(cacheKey);
   if (cached) {
     return {

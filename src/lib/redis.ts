@@ -2,6 +2,7 @@ import { Redis } from "@upstash/redis";
 import type { WatchEvent, UserProfile } from "@/types";
 
 let _redis: Redis | null = null;
+let _warnedMissingCreds = false;
 
 function getRedis(): Redis | null {
   if (!_redis) {
@@ -9,7 +10,10 @@ function getRedis(): Redis | null {
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
     if (!url || !token) {
-      console.warn("Redis credentials missing. Caching and Profiling will be disabled.");
+      if (!_warnedMissingCreds) {
+        console.warn("Redis credentials missing. Caching and Profiling will be disabled.");
+        _warnedMissingCreds = true;
+      }
       return null;
     }
 
@@ -64,4 +68,21 @@ export async function setCache(key: string, value: any, ttlSeconds = 3600 * 24):
   const redis = getRedis();
   if (!redis) return;
   await redis.set(`cache:${key}`, JSON.stringify(value), { ex: ttlSeconds });
+}
+
+// Fixed-window rate limiter. Returns true if the request is allowed.
+export async function checkRateLimit(
+  userId: string,
+  limit: number,
+  windowSeconds: number
+): Promise<{ allowed: boolean; remaining: number }> {
+  const redis = getRedis();
+  if (!redis) return { allowed: true, remaining: limit };
+
+  const window = Math.floor(Date.now() / (windowSeconds * 1000));
+  const key = `ratelimit:${userId}:${window}`;
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, windowSeconds);
+
+  return { allowed: count <= limit, remaining: Math.max(0, limit - count) };
 }

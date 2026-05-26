@@ -3,11 +3,17 @@ import { logWatchEvent } from "@/lib/redis";
 import type { WatchEvent } from "@/types";
 
 export async function POST(req: NextRequest) {
+  const VALID_EVENT_TYPES: WatchEvent["event_type"][] = ["click", "watch", "skip", "like", "dislike"];
+
   try {
     const event: WatchEvent = await req.json();
 
     if (!event.user_id || !event.video_id || !event.event_type) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (!VALID_EVENT_TYPES.includes(event.event_type)) {
+      return NextResponse.json({ error: "Invalid event_type" }, { status: 400 });
     }
 
     await logWatchEvent(event);
