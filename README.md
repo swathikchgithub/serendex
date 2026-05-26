@@ -226,7 +226,7 @@ src/
 
 ## Design Document
 
-See [DESIGN.md](../DESIGN.md) for the full architecture design, agent specifications, interview explainability guide, and build roadmap.
+See [DESIGN.md](./DESIGN.md) for the full architecture design, agent specifications, interview explainability guide, and build roadmap.
 
 ---
 
