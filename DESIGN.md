@@ -46,62 +46,49 @@ Unlike traditional recommendation pipelines (static models, batch updates), SERE
 | Filter bubbles | Amplifies existing interests | Diversity Guard audits every result set |
 | Staleness | Batch retraining (hours/days) | Trend Scout polls in near real-time |
 | Black box | No explanation possible | Explanation Agent narrates every decision |
-| Single failure point | One model fails = bad results | Agents retry, fallback, re-delegate |
+| Single failure point | One model fails = bad results | Agents degrade gracefully with fallbacks |
 
 ---
 
 ## 3. Agentic Architecture
 
+```mermaid
+flowchart TD
+    UserRequest([🙋 User Request]) --> Orchestrator
+
+    subgraph Parallel["⚡ Parallel Execution"]
+        ContentAnalysis["⚡ Content Analysis\nEmbeddings + pgvector ANN"]
+        UserProfiling["👤 User Profiling\nDecaying interest graph"]
+        TrendScout["📈 Trend Scout\nView velocity scoring"]
+    end
+
+    Orchestrator["🧠 Orchestrator\nStrategy · Merge · Cache"] --> Parallel
+
+    ContentAnalysis --> DiversityGuard
+    UserProfiling --> DiversityGuard
+    TrendScout --> DiversityGuard
+
+    DiversityGuard["🛡️ Diversity Guard\nFilter bubble prevention"] --> ExplanationAgent
+    ExplanationAgent["💬 Explanation Agent\nPersonalized why"] --> Result(["✅ 15 Ranked Recommendations\n+ Full Reasoning Trace"])
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         SERENDEX RUNTIME                            │
-│                                                                     │
-│   User Request                                                      │
-│       │                                                             │
-│       ▼                                                             │
-│  ┌────────────────────────────────────────────────────────────┐    │
-│  │                  ORCHESTRATOR AGENT                         │    │
-│  │              (Claude Sonnet — Tool Use)                     │    │
-│  │                                                             │    │
-│  │  - Reads user context                                       │    │
-│  │  - Decides which agents to invoke & in what order          │    │
-│  │  - Handles agent failures with retry/fallback logic        │    │
-│  │  - Merges results + triggers quality checks                │    │
-│  └─────┬──────────────┬────────────────────┬──────────────────┘    │
-│        │              │                    │                        │
-│   (parallel)     (parallel)           (parallel)                   │
-│        ▼              ▼                    ▼                        │
-│  ┌──────────┐  ┌─────────────┐  ┌──────────────────┐              │
-│  │ CONTENT  │  │    USER     │  │     TREND        │              │
-│  │ ANALYSIS │  │  PROFILING  │  │     SCOUT        │              │
-│  │  AGENT   │  │    AGENT    │  │     AGENT        │              │
-│  └────┬─────┘  └──────┬──────┘  └────────┬─────────┘              │
-│       │               │                  │                         │
-│       └───────────────┴──────────────────┘                         │
-│                              │                                      │
-│                              ▼                                      │
-│                  ┌───────────────────────┐                         │
-│                  │   DIVERSITY GUARD     │                         │
-│                  │       AGENT           │                         │
-│                  └───────────┬───────────┘                         │
-│                              │                                      │
-│                              ▼                                      │
-│                  ┌───────────────────────┐                         │
-│                  │   EXPLANATION AGENT   │                         │
-│                  └───────────┬───────────┘                         │
-│                              │                                      │
-│                              ▼                                      │
-│                    Final Ranked List + Reasoning                    │
-└─────────────────────────────────────────────────────────────────────┘
-```
+
+### Agent Table
+
+| Agent | Model | Role |
+|---|---|---|
+| Orchestrator | Configurable (default: `gpt-4o-mini`) | Reasons about strategy, delegates, merges results, caches |
+| Content Analysis | Configurable (default: `gpt-4o-mini`) | Semantic similarity via YouTube API + pgvector |
+| User Profiling | — (algorithmic) | Decaying interest graph from real video metadata + Redis |
+| Trend Scout | — (algorithmic) | Rising topics, view velocity scoring |
+| Diversity Guard | — (algorithmic) | Enforces channel/topic diversity constraints |
+| Explanation Agent | Configurable (default: `gpt-4o-mini`) | Personalized natural language "why this was recommended" |
 
 ### Agent Interaction Principles
 
-1. **Parallel by default** — Content Analysis, User Profiling, and Trend Scout run concurrently
-2. **Sequential where dependent** — Diversity Guard and Explanation Agent run after all three complete
-3. **Retry with backoff** — Each agent has a 3-attempt retry with exponential backoff
-4. **Confidence thresholds** — Orchestrator re-delegates if an agent's confidence score < 0.6
-5. **Short-circuit on quality** — If Content Analysis returns high-confidence results (>0.85), Orchestrator can skip Trend Scout for latency savings
+1. **Parallel by default** — Content Analysis and Trend Scout run concurrently via `Promise.all`
+2. **Sequential where dependent** — Diversity Guard and Explanation Agent run only after all three parallel agents complete
+3. **Cold start routing** — Orchestrator detects new users (< 3 watch events) and shifts weights: content 0.6 / trend 0.3 / profiling 0.1
+4. **Full result caching** — Orchestrator caches the complete response in Redis for 1 hour, keyed by `userId + seedVideoIds + modelId + query`
 
 ---
 
@@ -109,38 +96,17 @@ Unlike traditional recommendation pipelines (static models, batch updates), SERE
 
 ### 4.1 Orchestrator Agent
 
-**Role:** The brain. Coordinates all agents, reasons about the user's context, decides the optimal agent activation strategy.
+**Role:** The brain. Coordinates all agents, reasons about user context, decides the optimal weighting strategy, merges results.
 
-**Model:** `claude-sonnet-4-6` with tool use enabled
+**Model:** Configurable at runtime via `?model=` query param (default: `gpt-4o-mini`)
 
-**Tools available:**
-- `invoke_content_agent(query, video_seed_ids)`
-- `invoke_profiling_agent(user_id)`
-- `invoke_trend_agent(topic_hints)`
-- `invoke_diversity_guard(candidate_list)`
-- `invoke_explanation_agent(final_list, reasoning_logs)`
-- `get_user_context(user_id)` — reads session + history
-
-**Decision logic (pseudo):**
+**Merge weights:**
 ```
-if user.is_new:
-    run [trend_scout, content_analysis] in parallel
-    skip user_profiling (no data yet)
-else if user.session_length > 5:
-    run all three agents in parallel
-    weight user_profiling higher (0.5)
-else:
-    run [content_analysis, user_profiling] in parallel
-    skip trend_scout (save latency)
-```
+Cold start user (< 3 events):
+  final_score = content_similarity × 0.6 + user_relevance × 0.1 + trend_score × 0.3
 
-**System prompt excerpt:**
-```
-You are the Orchestrator of SERENDEX, an agentic recommendation engine.
-Your job is to reason about the user's context and delegate to the right
-specialist agents. You are not a router — you REASON about which agents
-to invoke, in what order, and how to weight their outputs.
-Always explain your delegation decisions in your reasoning trace.
+Returning user:
+  final_score = content_similarity × 0.5 + user_relevance × 0.3 + trend_score × 0.2
 ```
 
 ---
@@ -149,83 +115,59 @@ Always explain your delegation decisions in your reasoning trace.
 
 **Role:** Understands the semantic meaning of videos. Finds what's *like* something, not just what's tagged the same.
 
-**Model:** `claude-haiku-4-5` (fast, cheap — runs many comparisons)
+**Model:** Configurable (default: `gpt-4o-mini`)
 
 **Tools available:**
 - `search_youtube(query, max_results)` — YouTube Data API v3
 - `get_video_details(video_ids[])` — title, description, tags, duration, channel
-- `embed_text(texts[])` — generates vector embeddings (Voyage AI)
+- `embed_texts(texts[])` — Voyage AI `voyage-2` → 1024-dim vectors
 - `vector_search(embedding, top_k)` — cosine similarity search in pgvector
 
-**What it produces:**
-```json
-{
-  "agent": "content_analysis",
-  "candidates": [
-    {
-      "video_id": "abc123",
-      "title": "...",
-      "similarity_score": 0.92,
-      "semantic_topics": ["machine learning", "neural networks"],
-      "confidence": 0.88
-    }
-  ],
-  "reasoning": "Found strong semantic overlap on transformer architecture topic cluster"
-}
-```
-
 **Algorithm:**
-1. Take seed video(s) from user's recent history
-2. Embed their title + description + tags → 1536-dim vector
-3. Search pgvector index for top-50 nearest neighbors
-4. Re-rank by freshness × similarity
-5. Return top-20 with confidence scores
+1. LLM generates 2–3 targeted search queries from seed videos + user topics
+2. Executes searches, deduplicates candidates
+3. Embeds all candidate video texts → 1024-dim vectors via Voyage AI
+4. Computes cosine similarity against seed video embeddings
+5. Persists new embeddings to pgvector for future searches
+6. Also queries pgvector ANN index for historically similar videos
+7. Returns top-20 scored candidates
 
 ---
 
 ### 4.3 User Profiling Agent
 
-**Role:** Builds and maintains a dynamic interest graph. Knows what you care about *right now*, not just historically.
+**Role:** Builds and maintains a dynamic interest graph using real video metadata — not opaque video ID proxies.
 
-**Model:** `claude-haiku-4-5`
+**Model:** None — fully algorithmic
 
-**Tools available:**
-- `get_user_history(user_id, limit)` — recent watch/click events from Redis
-- `get_user_long_term_profile(user_id)` — persistent interest graph from Postgres
-- `update_interest_graph(user_id, new_signals)` — writes back updated weights
-- `cluster_interests(video_list)` — groups videos into topic clusters
+**Data sources:**
+- `getUserHistory(userId, 20)` — last 20 watch/click events from Redis
+- `getUserProfile(userId)` — persisted interest graph
+- `getVideoDetails(videoIds[])` — fetches real video metadata to extract meaningful topic keys
 
-**Memory model:**
+**Topic extraction:**
 ```
-Short-term memory (Redis, TTL: 24h):
-  - Last 20 watched videos
-  - Current session clicks
-  - Recency-weighted topic scores
-
-Long-term memory (Postgres, persistent):
-  - Interest graph: {topic: weight} with exponential decay
-  - Channel preferences
-  - Format preferences (shorts vs long-form vs tutorials)
-  - Negative signals (skipped, disliked)
+video.tags = ["AI", "Machine Learning", "Neural Networks"]
+→ interest_graph["ai"] += weight / topics.length
+→ interest_graph["machine_learning"] += weight / topics.length
+→ interest_graph["neural_networks"] += weight / topics.length
 ```
 
-**Interest decay formula:**
+**Interest decay (applied each run):**
 ```
-weight(t) = weight(t-1) × e^(-λ × days_since_interaction)
-where λ = 0.1 (slow decay — interests fade over ~10 days)
+weight = weight × 0.95
+(weights below 0.01 are pruned)
 ```
 
-**What it produces:**
-```json
-{
-  "agent": "user_profiling",
-  "user_vector": { "machine_learning": 0.9, "startups": 0.6, "cooking": 0.1 },
-  "preferred_channels": ["3Blue1Brown", "Lex Fridman"],
-  "format_preference": "long-form",
-  "cold_start": false,
-  "confidence": 0.82
-}
-```
+**Event weights:**
+
+| Event | Weight |
+|---|---|
+| like | 1.0 |
+| watch | min(duration_seconds / 300, 0.8) |
+| click | 0.3 |
+| skip | −0.2 |
+| dislike | −0.5 |
 
 ---
 
@@ -233,54 +175,34 @@ where λ = 0.1 (slow decay — interests fade over ~10 days)
 
 **Role:** Finds what's *rising* before it peaks. Injects cultural freshness into recommendations.
 
-**Model:** `claude-haiku-4-5`
-
-**Tools available:**
-- `get_trending_videos(region, category)` — YouTube trending API
-- `search_youtube_by_date(query, published_after)` — recent uploads on user topics
-- `get_video_velocity(video_id)` — views/hour growth rate (computed metric)
+**Model:** None — fully algorithmic
 
 **Trend scoring:**
 ```
-trend_score = (views_last_24h / total_views) × recency_boost
-recency_boost = 1 + (1 / days_since_publish)  // newer = higher boost
+trend_score = min((view_count / 1_000_000) × recency_boost, 1)
+recency_boost = 1 + (1 / days_since_publish)
 ```
 
-**What it produces:**
-```json
-{
-  "agent": "trend_scout",
-  "trending_candidates": [...],
-  "rising_topics": ["quantum computing", "vibe coding"],
-  "confidence": 0.74
-}
-```
+If topic hints exist, searches `{topic} {currentYear} news`. Falls back to YouTube global trending when no context is available.
 
 ---
 
 ### 4.5 Diversity Guard Agent
 
-**Role:** Acts as a critic. Audits the merged candidate list and enforces diversity constraints. Prevents the system from recommending 10 videos from the same channel.
+**Role:** Acts as a critic. Enforces hard diversity constraints on the merged candidate list.
 
-**Model:** `claude-haiku-4-5`
+**Model:** None — fully algorithmic
 
-**Diversity constraints enforced:**
+**Constraints:**
 ```
-max_same_channel: 2        // no channel monopoly
-max_same_topic_cluster: 3  // topic variety
-min_format_variety: 2      // mix shorts/long-form
-min_new_territory: 0.15    // 15% must be outside known interests
+max_same_channel:        2     // no channel monopoly
+min_new_territory_ratio: 0.15  // 15% serendipitous picks
+target_count:            15    // final list size
 ```
 
-**What it does:**
-1. Receives merged list of ~60 candidates
-2. Scores diversity across channel, topic, format, novelty dimensions
-3. If diversity_score < 0.7, re-ranks by penalizing redundant items
-4. Returns final 15 recommendations with diversity metadata
-
-**Loop condition (Orchestrator re-invokes if):**
+**Diversity score:**
 ```
-diversity_score < 0.6 → Orchestrator injects more Trend Scout results and retries
+list_diversity = channel_diversity × 0.6 + explanation_type_diversity × 0.4
 ```
 
 ---
@@ -289,60 +211,69 @@ diversity_score < 0.6 → Orchestrator injects more Trend Scout results and retr
 
 **Role:** Makes SERENDEX trustworthy and transparent. Generates a human-readable "why" for each recommendation.
 
-**Model:** `claude-sonnet-4-6` (needs nuanced language)
-
-**Input:** Final 15 videos + all agent reasoning logs
-
-**Output per video:**
-```json
-{
-  "video_id": "abc123",
-  "explanation": "Recommended because you watched 3 videos on transformer architecture this week, and this deep-dive by Andrej Karpathy covers the same topic from a practical angle you haven't explored yet.",
-  "explanation_type": "content_match + novelty",
-  "agent_sources": ["content_analysis", "user_profiling"]
-}
-```
+**Model:** Configurable (default: `gpt-4o-mini`)
 
 **Explanation types:**
-- `content_match` — "Similar to what you watched"
-- `interest_evolution` — "You've been exploring X, this goes deeper"
-- `trending_in_your_field` — "Rising fast in topics you care about"
-- `serendipitous` — "Outside your usual topics but highly relevant to your work"
-- `social_proof` — "Popular among viewers with similar taste"
+- `content_match` — semantically similar to seed videos
+- `interest_evolution` — extends a known interest into new territory
+- `trending` — rising fast in topics you care about
+- `serendipitous` — outside usual topics but algorithmically novel
+- `social_proof` — popular among viewers with similar taste
 
 ---
 
 ## 5. Data Flow
 
-```
-1. User opens SERENDEX app
-   └── GET /api/recommendations?user_id=xyz
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant API as /api/recommendations
+    participant Cache as Redis Cache
+    participant O as Orchestrator
+    participant CA as Content Analysis
+    participant UP as User Profiling
+    participant TS as Trend Scout
+    participant DG as Diversity Guard
+    participant EA as Explanation Agent
 
-2. API Route → invokes Orchestrator Agent
-   └── Orchestrator reads user context from Redis
+    U->>API: GET ?user_id&seed_video_id&model
+    API->>API: Validate model ID + rate limit (20 req/min)
+    API->>Cache: Check cache (userId + seedIds + modelId)
 
-3. Orchestrator delegates (parallel):
-   ├── Content Analysis Agent
-   │     └── YouTube API → embed → pgvector search → top 20
-   ├── User Profiling Agent
-   │     └── Redis (short-term) + Postgres (long-term) → interest graph
-   └── Trend Scout Agent
-         └── YouTube Trending API → velocity scoring → top 10
+    alt Cache hit
+        Cache-->>API: Cached result
+        API-->>U: Response (is_cached: true) ⚡
+    else Cache miss
+        API->>O: runOrchestrator()
+        O->>UP: runUserProfilingAgent()
+        UP->>Cache: getUserHistory + getUserProfile
+        UP->>UP: Fetch video metadata → extract real topic keys
+        UP-->>O: interest graph + top topics + is_cold_start
 
-4. Orchestrator merges results (60 candidates total)
-   └── Weighted merge: 0.5 content + 0.3 profiling + 0.2 trend
+        par Parallel execution
+            O->>CA: runContentAnalysisAgent()
+            CA->>CA: LLM generates search queries
+            CA->>CA: YouTube search + Voyage AI embed + pgvector ANN
+            CA-->>O: 20 candidates + similarity scores
 
-5. Diversity Guard audits merged list
-   └── Re-ranks to enforce diversity constraints → 15 finalists
+            O->>TS: runTrendScoutAgent()
+            TS->>TS: YouTube search by topic + velocity scoring
+            TS-->>O: 10 trending + rising topics
+        end
 
-6. Explanation Agent generates per-video reasoning
-   └── Returns natural language explanations
+        O->>O: Merge and weight scores
+        O->>DG: runDiversityGuardAgent()
+        DG->>DG: Enforce channel cap + serendipity floor
+        DG-->>O: 15 diverse finalists + diversity score
 
-7. API returns structured response to frontend
-   └── Frontend renders recommendations + explanations
+        O->>EA: runExplanationAgent()
+        EA->>EA: LLM generates per-video explanations
+        EA-->>O: Videos + explanation strings
 
-8. User interaction (click/watch/skip) → logged to Redis
-   └── Async: User Profiling Agent updates interest graph
+        O->>Cache: Cache result (TTL 1 hour)
+        O-->>API: RecommendationResponse
+        API-->>U: Response + X-RateLimit-Remaining header
+    end
 ```
 
 ---
@@ -352,42 +283,45 @@ diversity_score < 0.6 → Orchestrator injects more Trend Scout results and retr
 ### Runtime
 | Layer | Technology | Why |
 |---|---|---|
-| Framework | Next.js 14 App Router | Vercel-native, server components, API routes |
+| Framework | Next.js 16 App Router | Vercel-native, server components, API routes |
 | Language | TypeScript | Type safety across agent contracts |
-| AI Agents | Anthropic Claude API (tool use) | Native multi-step reasoning |
-| Embeddings | Voyage AI `voyage-2` | Best-in-class semantic embeddings |
+| AI Agents | AI SDK (multi-provider) | OpenAI, Anthropic, Groq, Google, OpenRouter — swappable at runtime |
+| Embeddings | Voyage AI `voyage-2` (1024-dim) | Best-in-class semantic embeddings |
 
 ### Data
 | Layer | Technology | Why |
 |---|---|---|
-| Vector DB | Vercel Postgres + pgvector | Free tier, zero config, SQL+vector in one |
-| Short-term memory | Upstash Redis | Vercel integration, serverless-friendly |
-| Video metadata cache | Vercel KV | Fast lookups, edge-cached |
+| Vector DB | Neon Postgres + pgvector (IVFFlat) | SQL + vector search in one, serverless-friendly |
+| Memory & Cache | Upstash Redis | User history, interest graphs, result caching, rate limiting |
 
 ### External APIs
 | API | Usage | Free Tier |
 |---|---|---|
 | YouTube Data API v3 | Video search, metadata, trending | 10,000 units/day |
-| Anthropic API | All 5 agents | Pay per token |
-| Voyage AI | Embeddings | 50M tokens free |
-
-### Observability
-| Tool | Usage |
-|---|---|
-| Vercel Analytics | Frontend performance |
-| Custom agent trace logs | Stored in Postgres `agent_traces` table |
-| LangSmith (optional) | Agent run visualization |
+| Voyage AI | Embeddings (voyage-2, 1024-dim) | 50M tokens free |
+| OpenAI / Anthropic / Groq / Google / OpenRouter | LLM agents — configurable per request | Varies by provider |
 
 ---
 
 ## 7. API Design
 
 ### `GET /api/recommendations`
-```typescript
-// Request
-GET /api/recommendations?user_id=xyz&seed_video_id=abc&limit=15
 
-// Response
+```
+GET /api/recommendations?user_id=xyz&seed_video_id=abc&q=machine+learning&model=gpt-4o-mini
+```
+
+| Param | Required | Description |
+|---|---|---|
+| `user_id` | No | Stable user identifier (UUID). Defaults to `"anonymous"`. |
+| `seed_video_id` | No | YouTube video ID to seed recommendations from |
+| `q` | No | Free-text search query |
+| `model` | No | Model ID from `models-list.ts`. Defaults to `gpt-4o-mini`. |
+
+**Rate limit:** 20 requests per minute per `user_id`. Returns `429` with `X-RateLimit-Remaining: 0` on breach.
+
+```typescript
+// Response shape
 {
   "recommendations": [
     {
@@ -395,9 +329,12 @@ GET /api/recommendations?user_id=xyz&seed_video_id=abc&limit=15
       "title": "string",
       "thumbnail": "string",
       "channel": "string",
+      "channel_id": "string",
       "duration": "string",
       "view_count": number,
       "published_at": "string",
+      "description": "string",
+      "tags": ["string"],
       "scores": {
         "content_similarity": 0.88,
         "user_relevance": 0.75,
@@ -406,54 +343,110 @@ GET /api/recommendations?user_id=xyz&seed_video_id=abc&limit=15
         "final_score": 0.79
       },
       "explanation": "string",
-      "explanation_type": "content_match | interest_evolution | trending | serendipitous"
+      "explanation_type": "content_match | interest_evolution | trending | serendipitous | social_proof"
     }
   ],
   "meta": {
-    "agents_invoked": ["orchestrator", "content_analysis", "user_profiling", "trend_scout", "diversity_guard", "explanation"],
+    "agents_invoked": ["string"],
     "total_latency_ms": 1840,
     "orchestrator_reasoning": "string",
-    "diversity_score": 0.84
+    "diversity_score": 0.84,
+    "is_cached": false,
+    "traces": [
+      {
+        "agent": "string",
+        "started_at": "string",
+        "completed_at": "string",
+        "latency_ms": number,
+        "tools_called": ["string"],
+        "reasoning": "string",
+        "output_count": number,
+        "confidence": number
+      }
+    ]
   }
 }
 ```
 
 ### `POST /api/events`
+
 ```typescript
-// Log user interaction
 {
   "user_id": "string",
   "video_id": "string",
-  "event_type": "click | watch | skip | like | dislike",
-  "watch_duration_seconds": number,
-  "timestamp": "string"
+  "event_type": "click | watch | skip | like | dislike",  // validated server-side
+  "watch_duration_seconds": number                         // optional
 }
 ```
 
-### `GET /api/agent-trace/:session_id`
+### `POST /api/profile`
+
 ```typescript
-// For the "show your reasoning" feature
+// Seed a user's interest graph (e.g. onboarding topic selection)
 {
-  "session_id": "string",
-  "agents": [
-    {
-      "agent": "content_analysis",
-      "started_at": "string",
-      "completed_at": "string",
-      "tools_called": [...],
-      "reasoning": "string",
-      "output_count": 20
-    }
-  ]
+  "user_id": "string",
+  "interests": ["machine learning", "startups", "cooking"]
 }
 ```
+
+### `POST /api/setup`
+
+Run once after deployment to create pgvector tables and IVFFlat index. Idempotent.
 
 ---
 
 ## 8. Database Schema
 
+```mermaid
+erDiagram
+    video_embeddings {
+        uuid id PK
+        text video_id UK
+        text title
+        text description
+        text[] tags
+        text channel_id
+        vector_1024 embedding
+        text[] topics
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    user_profiles {
+        text user_id PK
+        jsonb interest_graph
+        jsonb channel_prefs
+        jsonb format_prefs
+        text[] negative_signals
+        timestamptz last_updated
+    }
+
+    agent_traces {
+        uuid id PK
+        text session_id
+        text agent_name
+        jsonb input
+        jsonb output
+        text reasoning
+        integer latency_ms
+        float confidence
+        timestamptz created_at
+    }
+
+    watch_events {
+        uuid id PK
+        text user_id
+        text video_id
+        text event_type
+        integer watch_duration
+        timestamptz created_at
+    }
+
+    user_profiles ||--o{ watch_events : "tracks"
+    watch_events }o--|| video_embeddings : "references"
+```
+
 ```sql
--- Video embeddings (pgvector)
 CREATE TABLE video_embeddings (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   video_id    TEXT UNIQUE NOT NULL,
@@ -461,24 +454,22 @@ CREATE TABLE video_embeddings (
   description TEXT,
   tags        TEXT[],
   channel_id  TEXT,
-  embedding   vector(1536),       -- Voyage AI embedding
-  topics      TEXT[],             -- extracted topic clusters
+  embedding   vector(1024),       -- Voyage AI voyage-2 (1024-dim)
+  topics      TEXT[],
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );
-CREATE INDEX ON video_embeddings USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX ON video_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
--- User long-term interest profiles
 CREATE TABLE user_profiles (
   user_id         TEXT PRIMARY KEY,
-  interest_graph  JSONB,          -- { topic: weight }
-  channel_prefs   JSONB,          -- { channel_id: weight }
-  format_prefs    JSONB,          -- { shorts: 0.3, long: 0.7 }
-  negative_signals TEXT[],        -- skipped/disliked video_ids
+  interest_graph  JSONB NOT NULL DEFAULT '{}',
+  channel_prefs   JSONB NOT NULL DEFAULT '{}',
+  format_prefs    JSONB NOT NULL DEFAULT '{"shorts":0.33,"long_form":0.33,"tutorials":0.33}',
+  negative_signals TEXT[] NOT NULL DEFAULT '{}',
   last_updated    TIMESTAMPTZ DEFAULT now()
 );
 
--- Agent reasoning traces (for transparency UI)
 CREATE TABLE agent_traces (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id  TEXT NOT NULL,
@@ -490,14 +481,14 @@ CREATE TABLE agent_traces (
   confidence  FLOAT,
   created_at  TIMESTAMPTZ DEFAULT now()
 );
+CREATE INDEX ON agent_traces (session_id);
 
--- Watch events (async fed to User Profiling Agent)
 CREATE TABLE watch_events (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         TEXT NOT NULL,
   video_id        TEXT NOT NULL,
-  event_type      TEXT NOT NULL,  -- click, watch, skip, like, dislike
-  watch_duration  INTEGER,        -- seconds
+  event_type      TEXT NOT NULL,
+  watch_duration  INTEGER,
   created_at      TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX ON watch_events (user_id, created_at DESC);
@@ -508,55 +499,52 @@ CREATE INDEX ON watch_events (user_id, created_at DESC);
 ## 9. Frontend Design
 
 ### Pages
-```
-/                   → Landing + search bar
-/feed               → Main recommendations grid
-/video/:id          → Video player page + sidebar recommendations
-/profile            → User interest graph visualization
-/trace/:session_id  → Agent reasoning transparency view (interview showpiece)
-```
+
+| Route | Description |
+|---|---|
+| `/` | Landing page — search bar + demo scenarios |
+| `/feed` | Recommendations grid with agent trace panel |
+| `/video/[id]` | Video player + "Up Next" sidebar recommendations |
+| `/about` | System architecture diagram + how it works |
+| `/privacy` | Privacy policy (YouTube API compliance) |
+| `/terms` | Terms of service |
 
 ### Key UI Components
 
-**Recommendation Card:**
+**Recommendation Card (sidebar):**
 ```
 ┌─────────────────────────────────────────┐
-│  [Thumbnail]                            │
+│  [Thumbnail ≥120×70px]  [duration]      │
 │  Title of the video                     │
-│  Channel Name · 1.2M views · 3 days ago │
-│                                         │
-│  💡 "Recommended because you've been   │
-│      exploring transformer architecture │
-│      — this goes deeper on attention"  │
-│                                         │
-│  [Content Match 88%] [Trending ↑]      │
+│  Channel Name                           │
+│  [Content Match]                        │
 └─────────────────────────────────────────┘
 ```
 
-**Agent Trace View (Interview Showpiece):**
+**Agent Trace View:**
 ```
 SERENDEX Reasoning Trace
 ─────────────────────────
 🧠 Orchestrator (42ms)
-   "User has 14 days history, invoking all 3 agents in parallel.
-    Weighting user_profiling higher (0.5) due to rich history."
+   "Returning user with 8 known interests. Running all agents.
+    Profiling weight: 0.3. Topics: machine_learning, startups."
 
 ⚡ Content Analysis (380ms)     ✓ 20 candidates
-   Tools: search_youtube → embed_text → vector_search
+   Tools: search_youtube × 3 → embed_texts → vector_search
    "Found strong cluster around ML education content"
 
 👤 User Profiling (120ms)       ✓ Interest graph loaded
-   "Top interests: ML (0.9), startups (0.6). Prefers long-form."
+   "Top interests: machine_learning (0.9), startups (0.6)."
 
 📈 Trend Scout (290ms)          ✓ 10 trending candidates
-   "Detected rising topic: vibe coding — relevant to user"
+   "Rising topics: vibe coding, agentic AI"
 
-🛡️ Diversity Guard (85ms)       ✓ Score: 0.84
-   "Penalized 3 duplicate 3Blue1Brown videos. Injected 2 novel picks."
+🛡️ Diversity Guard (8ms)        ✓ Score: 0.84
+   "Enforced channel cap. Injected 1 serendipitous pick."
 
 💬 Explanation Agent (340ms)    ✓ 15 explanations generated
 ─────────────────────────────────────────
-Total: 1,257ms
+Total: 1,180ms
 ```
 
 ---
@@ -573,25 +561,28 @@ Total: 1,257ms
                                          │
                          ┌───────────────┼───────────────┐
                          │               │               │
-                    Anthropic        Upstash         Vercel
-                    Claude API        Redis          Postgres
-                    (agents)      (short-term      (pgvector
-                                   memory)         embeddings)
-                                                        │
-                                                   Vercel KV
-                                                (metadata cache)
+                  AI Providers       Upstash           Neon
+              (OpenAI / Anthropic    Redis           Postgres
+               Groq / Google /   (memory, cache,   (pgvector
+               OpenRouter)        rate limiting)    embeddings)
 ```
 
 ### Environment Variables
+
 ```bash
-ANTHROPIC_API_KEY=
+# Required
 YOUTUBE_API_KEY=
 VOYAGE_API_KEY=
-POSTGRES_URL=
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
-KV_REST_API_URL=
-KV_REST_API_TOKEN=
+POSTGRES_URL=
+
+# At least one provider required (gpt-4o-mini / OpenAI is the default)
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+GROQ_API_KEY=
+GOOGLE_GENERATIVE_AI_API_KEY=
+OPENROUTER_API_KEY=
 ```
 
 ---
@@ -599,55 +590,59 @@ KV_REST_API_TOKEN=
 ## 11. Interview Explainability Guide
 
 ### "Walk me through your architecture"
-> *SERENDEX uses a multi-agent architecture with 5 specialized Claude agents coordinated by an Orchestrator. Content Analysis handles semantic similarity via embeddings, User Profiling maintains a decaying interest graph, Trend Scout injects freshness signals, Diversity Guard prevents filter bubbles, and an Explanation Agent makes every recommendation transparent. The Orchestrator reasons — not just routes — deciding which agents to invoke based on user context.*
+> *SERENDEX uses a multi-agent architecture with 6 specialized agents coordinated by an Orchestrator. Content Analysis handles semantic similarity via embeddings, User Profiling maintains a decaying interest graph built from real video metadata, Trend Scout injects freshness signals, Diversity Guard prevents filter bubbles, and an Explanation Agent makes every recommendation transparent. The Orchestrator reasons — not just routes — deciding how to weight agents based on user context.*
 
 ### "How do you handle cold start?"
-> *New users have no history, so User Profiling Agent is skipped entirely. The Orchestrator routes to Trend Scout and Content Analysis only. As the user interacts, User Profiling Agent activates incrementally, increasing its weight in the merge formula.*
+> *New users (fewer than 3 watch events) trigger cold-start mode. Content Analysis weight increases to 0.6, Trend Scout to 0.3, User Profiling drops to 0.1. As the user interacts, watch events are logged, video metadata is fetched to extract real topic keys, and the interest graph becomes richer — gradually shifting weights toward profiling.*
 
 ### "How does it scale?"
-> *Each agent is a stateless serverless function. State lives in Redis (ephemeral) and Postgres (persistent). The pgvector index uses IVFFlat approximate nearest neighbors — handles millions of embeddings with sub-100ms query time. We can scale agents independently based on load.*
+> *Each agent is a stateless serverless function. State lives in Redis (TTL: 7 days) and Neon Postgres (persistent). The pgvector IVFFlat index handles millions of embeddings with sub-100ms ANN query time. Result caching means most returning users pay zero LLM cost — they get a cache hit in milliseconds. Rate limiting (20 req/min via Redis) protects YouTube API quota.*
 
 ### "Why agents instead of a single model?"
-> *Separation of concerns at the reasoning level. Each agent can fail and retry independently. You can swap out the algorithm for one agent without touching others. And critically — you get explainability for free, because each agent logs its reasoning chain.*
+> *Separation of concerns at the reasoning level. User Profiling and Trend Scout are pure algorithms — fast, deterministic, no LLM cost. Only Content Analysis and Explanation Agent need language models. You can swap the LLM provider per request at runtime without changing any agent logic. And you get explainability for free because each agent logs its reasoning chain.*
 
 ### "What's your latency story?"
-> *P50 is ~1.2s. The three main agents run in parallel so we pay the cost of the slowest, not the sum. For returning users with a warm Redis cache, User Profiling completes in <100ms. We short-circuit Trend Scout if Content Analysis returns high-confidence results.*
+> *P50 is ~1.2s for a cache miss. Content Analysis and Trend Scout run in parallel, so we pay the cost of the slowest, not the sum. User Profiling hits Redis only — typically under 150ms including the video metadata lookup (also cached). Cache hits return in under 50ms.*
 
 ### "How do you prevent filter bubbles?"
-> *Diversity Guard is an explicit architectural component, not an afterthought. It enforces hard constraints: max 2 videos per channel, at least 15% of results must come from outside the user's known interest clusters. It's the critic in the society of agents.*
+> *Diversity Guard is an explicit architectural component, not an afterthought. It enforces hard constraints: max 2 videos per channel, minimum 15% of results must come from outside the user's known interest clusters. It's the critic in the society of agents — it can override high-scoring candidates to enforce variety.*
+
+### "How do you handle YouTube API quota?"
+> *Two layers of defense: (1) all YouTube API results are cached in Redis — searches for 24h, video details for 7 days — so quota is consumed only on genuine cache misses. (2) On 403 quota-exceeded responses, the app degrades gracefully: `searchYouTube` falls back to mock data, `getVideoDetails` returns an empty array — the app never hard-crashes.*
 
 ---
 
 ## 12. Build Roadmap
 
-### Phase 1 — Foundation (Week 1)
-- [ ] Next.js 14 project setup with TypeScript
-- [ ] YouTube Data API integration + search endpoint
-- [ ] Voyage AI embedding pipeline
-- [ ] pgvector setup on Vercel Postgres
-- [ ] Content Analysis Agent (basic tool use)
-- [ ] Simple UI: search → recommendations grid
+### Phase 1 — Foundation ✅
+- [x] Next.js 16 project setup with TypeScript
+- [x] YouTube Data API v3 integration + search endpoint
+- [x] Voyage AI embedding pipeline (voyage-2, 1024-dim)
+- [x] pgvector setup on Neon Postgres with IVFFlat index
+- [x] Content Analysis Agent (YouTube search + vector similarity)
+- [x] Simple UI: search → recommendations grid
 
-### Phase 2 — Agents Come Alive (Week 2)
-- [ ] Orchestrator Agent with decision logic
-- [ ] User Profiling Agent + Redis memory
-- [ ] Watch event logging pipeline
-- [ ] Trend Scout Agent
-- [ ] Merge algorithm with weighted scores
+### Phase 2 — Agents Come Alive ✅
+- [x] Orchestrator Agent with cold-start / returning-user strategy
+- [x] User Profiling Agent + Redis memory (real topic key extraction)
+- [x] Watch event logging pipeline
+- [x] Trend Scout Agent (view velocity scoring)
+- [x] Weighted merge algorithm
 
-### Phase 3 — Quality & Transparency (Week 3)
-- [ ] Diversity Guard Agent
-- [ ] Explanation Agent
-- [ ] Agent Trace UI (the interview showpiece)
-- [ ] User interest graph visualization
-- [ ] Cold start handling
+### Phase 3 — Quality & Transparency ✅
+- [x] Diversity Guard Agent (channel cap + serendipity floor)
+- [x] Explanation Agent (per-video natural language reasoning)
+- [x] Agent Trace UI (live reasoning chain in the frontend)
+- [x] Cold start handling
+- [x] Multi-model support (OpenAI, Anthropic, Groq, Google, OpenRouter)
 
-### Phase 4 — Polish & Deploy (Week 4)
-- [ ] Performance optimization (parallel agents, caching)
-- [ ] Error handling + agent fallbacks
-- [ ] Vercel deployment with all env vars
-- [ ] Demo video walkthrough
-- [ ] This design doc → GitHub README
+### Phase 4 — Polish & Deploy ✅
+- [x] Full orchestrator result caching (Redis, 1 hour TTL)
+- [x] Redis-based rate limiting (20 req/min per user)
+- [x] YouTube API quota fallback (graceful degradation)
+- [x] YouTube API compliance fixes (branding, thumbnails, real data)
+- [x] Vercel deployment — live at [serendex.vercel.app](https://serendex.vercel.app)
+- [x] Legal pages (Privacy Policy, Terms of Service)
 
 ---
 
