@@ -26,7 +26,6 @@ interface Props {
 
 export function RecommendationCard({ video, onEvent }: Props) {
   const router = useRouter();
-  const scorePercent = Math.round(video.scores.final_score * 100);
 
   const handleClick = () => {
     onEvent?.("click");
@@ -55,9 +54,6 @@ export function RecommendationCard({ video, onEvent }: Props) {
         )}
         <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded">
           {video.duration}
-        </div>
-        <div className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded font-mono border border-white/10">
-          {scorePercent}%
         </div>
       </div>
 
@@ -95,33 +91,9 @@ export function RecommendationCard({ video, onEvent }: Props) {
           </p>
         )}
 
-        {/* Score bars */}
-        <div className="space-y-1 pt-1 border-t border-white/5">
-          <div className="flex items-center justify-between mb-1">
-             <span className="text-[9px] text-white/20 uppercase tracking-widest font-bold">AI Discovery Scores</span>
-             <span className="text-[9px] text-white/20 italic">Agentic Metrics</span>
-          </div>
-          <ScoreBar label="Content" value={video.scores.content_similarity} color="bg-blue-400" />
-          <ScoreBar label="Trend" value={video.scores.trend_score} color="bg-orange-400" />
-          <ScoreBar label="Relevance" value={video.scores.user_relevance} color="bg-purple-400" />
-        </div>
       </div>
 
     </div>
   );
 }
 
-function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-white/30 text-xs w-14">{label}</span>
-      <div className="flex-1 bg-white/5 rounded-full h-1">
-        <div
-          className={`h-1 rounded-full ${color} transition-all`}
-          style={{ width: `${Math.round(value * 100)}%` }}
-        />
-      </div>
-      <span className="text-white/20 text-xs w-6">{Math.round(value * 100)}</span>
-    </div>
-  );
-}

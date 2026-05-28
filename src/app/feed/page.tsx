@@ -140,10 +140,6 @@ function FeedContent() {
                   <span className="text-white font-bold text-lg">{data.meta.agents_invoked.length}</span>
                   <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold">Agents</span>
                 </div>
-                <div className="bg-black/20 rounded-2xl px-4 py-3 border border-white/5 flex flex-col items-center min-w-[80px]">
-                  <span className="text-white font-bold text-lg">{Math.round(data.meta.diversity_score * 100)}<span className="text-[10px] ml-0.5 opacity-50">%</span></span>
-                  <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold">Diversity</span>
-                </div>
               </div>
             </div>
           </div>
