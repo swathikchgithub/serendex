@@ -64,8 +64,8 @@ export default async function VideoPage({ params }: Props) {
                   rel="noopener noreferrer"
                   className="text-xs px-4 py-2 rounded-lg bg-red-600/90 hover:bg-red-600 text-white font-semibold transition-colors flex items-center gap-2"
                 >
-                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0C.488 3.45.029 5.804 0 12c.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0C23.512 20.55 23.971 18.196 24 12c-.029-6.185-.484-8.549-4.385-8.816zM9 16V8l8 3.993L9 16z"/>
+                  <svg className="h-7 w-auto" viewBox="0 0 576 512" fill="currentColor" aria-hidden="true">
+                    <path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.03-11.412 132.03s0 89.163 11.412 132.03c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.03 11.412-132.03s0-89.163-11.412-132.03zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/>
                   </svg>
                   Watch on YouTube
                 </a>
