@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { MODELS } from "@/lib/models-list";
+import { AuthButton } from "@/components/AuthButton";
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [modelId, setModelId] = useState("gpt-4o-mini");
   const router = useRouter();
+  const { data: session } = useSession();
 
   useEffect(() => {
     const saved = localStorage.getItem("serendex_model") ?? "gpt-4o-mini";
@@ -24,13 +27,14 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-black flex flex-col items-center justify-center p-8 relative overflow-hidden">
       {/* Top Nav */}
-      <nav className="absolute top-8 right-8 flex gap-6">
-        <button 
+      <nav className="absolute top-8 right-8 flex items-center gap-6">
+        <button
           onClick={() => router.push('/about')}
           className="text-sm text-white/40 hover:text-white transition-colors"
         >
           How it works
         </button>
+        <AuthButton />
       </nav>
 
       <div className="text-center mb-12">
@@ -106,15 +110,13 @@ export default function Home() {
               <button
                 key={topic}
                 onClick={async () => {
-                  const uid = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
-                  localStorage.setItem("serendex_uid", uid);
-                  
-                  // Optimistic UI or just quick set
                   setQuery(topic);
-                  await fetch("/api/profile", {
-                    method: "POST",
-                    body: JSON.stringify({ user_id: uid, interests: [topic] })
-                  });
+                  if (session?.user) {
+                    await fetch("/api/profile", {
+                      method: "POST",
+                      body: JSON.stringify({ interests: [topic] })
+                    });
+                  }
                   router.push(`/feed?q=${encodeURIComponent(topic)}`);
                 }}
                 className="text-xs text-white/50 hover:text-white border border-white/10 hover:border-violet-500/50 hover:bg-violet-500/5 rounded-full px-4 py-2 transition-all"

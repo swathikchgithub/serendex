@@ -42,10 +42,7 @@ function FeedContent() {
     setLoading(true);
     setError(null);
     try {
-      const userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
-      localStorage.setItem("serendex_uid", userId);
-
-      const res = await fetch(`/api/recommendations?user_id=${userId}&q=${encodeURIComponent(query)}&model=${modelId}`);
+      const res = await fetch(`/api/recommendations?q=${encodeURIComponent(query)}&model=${modelId}`);
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? `Server error ${res.status}`);
@@ -66,12 +63,10 @@ function FeedContent() {
   }, [query, modelId, fetchRecommendations]);
 
   const handleEvent = async (videoId: string, type: "click" | "skip") => {
-    const userId = localStorage.getItem("serendex_uid");
-    if (!userId) return;
     await fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, video_id: videoId, event_type: type }),
+      body: JSON.stringify({ video_id: videoId, event_type: type }),
     });
   };
 

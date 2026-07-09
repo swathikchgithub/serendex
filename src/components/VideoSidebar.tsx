@@ -42,25 +42,20 @@ export function VideoSidebar({ seedVideoId }: Props) {
 
   // Log a watch event only when the seed video changes
   useEffect(() => {
-    const userId = localStorage.getItem("serendex_uid") ?? crypto.randomUUID();
-    localStorage.setItem("serendex_uid", userId);
-
     fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, video_id: seedVideoId, event_type: "watch" }),
+      body: JSON.stringify({ video_id: seedVideoId, event_type: "watch" }),
     }).catch(() => {});
   }, [seedVideoId]);
 
   // Fetch recommendations whenever seed video or model changes
   useEffect(() => {
-    const userId = localStorage.getItem("serendex_uid") ?? "anonymous";
-
     setData(null);
     setError(null);
     setLoading(true);
 
-    fetch(`/api/recommendations?user_id=${userId}&seed_video_id=${seedVideoId}&model=${modelId}`)
+    fetch(`/api/recommendations?seed_video_id=${seedVideoId}&model=${modelId}`)
       .then(async (r) => {
         const json = await r.json();
         if (!r.ok) throw new Error(json.error ?? `Server error ${r.status}`);
@@ -77,14 +72,11 @@ export function VideoSidebar({ seedVideoId }: Props) {
   }, [seedVideoId, modelId]);
 
   const handleClick = (videoId: string) => {
-    const userId = localStorage.getItem("serendex_uid");
-    if (userId) {
-      fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, video_id: videoId, event_type: "click" }),
-      }).catch(() => {});
-    }
+    fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video_id: videoId, event_type: "click" }),
+    }).catch(() => {});
     router.push(`/video/${videoId}`);
   };
 

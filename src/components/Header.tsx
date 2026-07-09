@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AuthButton } from "@/components/AuthButton";
 
 export function Header({ title }: { title?: string }) {
   const router = useRouter();
@@ -55,12 +56,13 @@ export function Header({ title }: { title?: string }) {
 
         {/* Mobile Search Toggle or just Spacer */}
         <div className="shrink-0 flex items-center gap-4">
-          <Link 
+          <Link
             href="/about"
             className="text-xs text-white/40 hover:text-white transition-colors"
           >
             How it works
           </Link>
+          <AuthButton />
         </div>
       </div>
     </header>

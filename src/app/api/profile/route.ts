@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserProfile, saveUserProfile } from "@/lib/redis";
+import { auth } from "@/lib/auth";
 import type { UserProfile } from "@/types";
 
 export async function POST(req: NextRequest) {
   try {
-    const { user_id, interests } = await req.json();
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const user_id = session.user.id;
 
-    if (!user_id || !interests || !Array.isArray(interests)) {
+    const { interests } = await req.json();
+
+    if (!interests || !Array.isArray(interests)) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 

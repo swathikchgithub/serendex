@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,9 +29,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <Providers>
+          {children}
 
-        <footer className="mt-auto border-t border-white/5 bg-black/50 py-12">
+          <footer className="mt-auto border-t border-white/5 bg-black/50 py-12">
           <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between gap-8 items-start">
             <div className="space-y-4">
               <h3 className="font-bold text-white">SERENDEX</h3>
@@ -65,7 +67,8 @@ export default function RootLayout({
           <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-white/5 text-[10px] text-white/20">
             © 2026 SERENDEX. Built with YouTube API Services.
           </div>
-        </footer>
+          </footer>
+        </Providers>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@ import { runOrchestrator } from "@/agents/orchestrator";
 import { getVideoDetails } from "@/lib/youtube";
 import { checkRateLimit } from "@/lib/redis";
 import { MODELS } from "@/lib/models-list";
+import { auth } from "@/lib/auth";
 
 const VALID_MODEL_IDS = new Set(MODELS.map((m) => m.value));
 const RATE_LIMIT = 20;       // requests
@@ -10,7 +11,6 @@ const RATE_WINDOW = 60;      // seconds
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const userId = searchParams.get("user_id") ?? "anonymous";
   const seedVideoId = searchParams.get("seed_video_id");
   const query = searchParams.get("q") ?? "";
   const modelId = searchParams.get("model") ?? "gpt-4o-mini";
@@ -19,7 +19,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: `Unknown model: ${modelId}` }, { status: 400 });
   }
 
-  const { allowed, remaining } = await checkRateLimit(userId, RATE_LIMIT, RATE_WINDOW);
+  const session = await auth();
+  const authenticatedUserId = session?.user?.id;
+
+  // Guests share a single non-personalized profile/cache bucket; rate limit
+  // them by IP instead, since there's no verified identity to key on.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rateLimitId = authenticatedUserId ?? `guest:${ip}`;
+  const userId = authenticatedUserId ?? "guest";
+
+  const { allowed, remaining } = await checkRateLimit(rateLimitId, RATE_LIMIT, RATE_WINDOW);
   if (!allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded. Please wait before making another request." },

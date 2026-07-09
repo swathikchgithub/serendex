@@ -6,6 +6,9 @@ process.env.YOUTUBE_API_KEY = 'test_key'
 process.env.OPENROUTER_API_KEY = 'test_key'
 process.env.UPSTASH_REDIS_REST_URL = 'https://test.upstash.io'
 process.env.UPSTASH_REDIS_REST_TOKEN = 'test_token'
+process.env.AUTH_SECRET = 'test_auth_secret'
+process.env.AUTH_GOOGLE_ID = 'test_google_id'
+process.env.AUTH_GOOGLE_SECRET = 'test_google_secret'
 
 // Mock fetch
 global.fetch = vi.fn()
