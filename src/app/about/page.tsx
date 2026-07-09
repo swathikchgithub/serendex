@@ -92,6 +92,9 @@ export default function AboutPage() {
               <p className="text-white/40 text-sm leading-relaxed">
                 Maintains a temporal interest graph. It learns from your "skips" and "clicks" to refine your taste graph in real-time using Redis.
               </p>
+              <p className="text-white/30 text-xs leading-relaxed mt-3">
+                Requires signing in with Google — signed-out visitors can still browse and search, but get non-personalized discovery.
+              </p>
             </div>
             <div className="p-8 rounded-3xl bg-white/5 border border-white/10 hover:border-pink-500/30 transition-all group">
               <div className="text-3xl mb-6 group-hover:scale-110 transition-transform origin-left">📈</div>

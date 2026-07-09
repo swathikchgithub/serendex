@@ -104,6 +104,9 @@ Fill in your keys:
 | `UPSTASH_REDIS_REST_URL` | ✅ | [upstash.com](https://upstash.com) → Create database → REST API |
 | `UPSTASH_REDIS_REST_TOKEN` | ✅ | Same as above |
 | `POSTGRES_URL` | ✅ | Vercel Dashboard → Storage → Create Postgres database |
+| `AUTH_SECRET` | ✅ | Generate with `npx auth secret` or `openssl rand -base64 32` |
+| `AUTH_GOOGLE_ID` | ✅ | [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials → OAuth client ID |
+| `AUTH_GOOGLE_SECRET` | ✅ | Same as above |
 | `ANTHROPIC_API_KEY` | Provider | [console.anthropic.com](https://console.anthropic.com) — for Claude models |
 | `OPENAI_API_KEY` | Provider | [platform.openai.com](https://platform.openai.com) — for GPT models |
 | `GROQ_API_KEY` | Provider | [console.groq.com](https://console.groq.com) — for Llama / Mixtral via Groq |
@@ -141,9 +144,10 @@ This creates the pgvector tables and IVFFlat index.
 3. In Vercel Dashboard → Storage:
    - Add **Postgres** database (enables pgvector)
    - Add **Upstash Redis** integration
-4. Add remaining env vars: `ANTHROPIC_API_KEY`, `YOUTUBE_API_KEY`, `VOYAGE_API_KEY`
-5. Deploy
-6. Hit `POST https://your-app.vercel.app/api/setup` once to create tables
+4. Add remaining env vars: `ANTHROPIC_API_KEY`, `YOUTUBE_API_KEY`, `VOYAGE_API_KEY`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
+5. In your Google Cloud OAuth client, add `https://your-app.vercel.app` as an authorized JavaScript origin and `https://your-app.vercel.app/api/auth/callback/google` as an authorized redirect URI
+6. Deploy
+7. Hit `POST https://your-app.vercel.app/api/setup` once to create tables
 
 ### Environment Variables on Vercel
 
@@ -151,6 +155,9 @@ This creates the pgvector tables and IVFFlat index.
 ANTHROPIC_API_KEY        → Settings > Environment Variables
 YOUTUBE_API_KEY          → Settings > Environment Variables
 VOYAGE_API_KEY           → Settings > Environment Variables
+AUTH_SECRET              → Settings > Environment Variables
+AUTH_GOOGLE_ID           → Settings > Environment Variables
+AUTH_GOOGLE_SECRET       → Settings > Environment Variables
 UPSTASH_REDIS_REST_URL   → Auto-added by Upstash integration
 UPSTASH_REDIS_REST_TOKEN → Auto-added by Upstash integration
 POSTGRES_URL             → Auto-added by Vercel Postgres integration
@@ -163,25 +170,27 @@ POSTGRES_URL             → Auto-added by Vercel Postgres integration
 ### `GET /api/recommendations`
 
 ```
-GET /api/recommendations?user_id=xyz&q=machine+learning&seed_video_id=abc&model=gpt-4o-mini
+GET /api/recommendations?q=machine+learning&seed_video_id=abc&model=gpt-4o-mini
 ```
 
 | Param | Required | Description |
 |---|---|---|
-| `user_id` | No | Stable user identifier (UUID). Defaults to `"anonymous"`. |
 | `q` | No | Free-text search query |
 | `seed_video_id` | No | YouTube video ID to seed recommendations from |
 | `model` | No | Model ID from the supported list. Defaults to `gpt-4o-mini`. |
 
+Identity comes from the Auth.js session cookie, not a request param. Signed-in users get personalization from their history; signed-out requests get non-personalized results under a shared `"guest"` identity.
+
 Returns 15 ranked video recommendations with agent reasoning traces.
 
-Rate limited to **20 requests per minute per user**. Exceeding the limit returns `429` with `X-RateLimit-Remaining: 0`.
+Rate limited to **20 requests per minute**, keyed by the signed-in user's id, or by IP address for guests. Exceeding the limit returns `429` with `X-RateLimit-Remaining: 0`.
 
 ### `POST /api/events`
 
+Requires sign-in — no-ops for signed-out requests rather than erroring.
+
 ```json
 {
-  "user_id": "string",
   "video_id": "string",
   "event_type": "click | watch | skip | like | dislike",
   "watch_duration_seconds": 120

@@ -236,8 +236,9 @@ sequenceDiagram
     participant DG as Diversity Guard
     participant EA as Explanation Agent
 
-    U->>API: GET ?user_id&seed_video_id&model
-    API->>API: Validate model ID + rate limit (20 req/min)
+    U->>API: GET ?seed_video_id&model (session cookie carries identity)
+    API->>API: Resolve session (Auth.js) → userId, or "guest" if signed out
+    API->>API: Validate model ID + rate limit (20 req/min, by userId or guest IP)
     API->>Cache: Check cache (userId + seedIds + modelId)
 
     alt Cache hit
@@ -287,6 +288,7 @@ sequenceDiagram
 | Language | TypeScript | Type safety across agent contracts |
 | AI Agents | AI SDK (multi-provider) | OpenAI, Anthropic, Groq, Google, OpenRouter — swappable at runtime |
 | Embeddings | Voyage AI `voyage-2` (1024-dim) | Best-in-class semantic embeddings |
+| Auth | Auth.js (NextAuth v5) | Google OAuth sign-in, JWT sessions — replaces the old client-generated UUID |
 
 ### Data
 | Layer | Technology | Why |
@@ -308,17 +310,18 @@ sequenceDiagram
 ### `GET /api/recommendations`
 
 ```
-GET /api/recommendations?user_id=xyz&seed_video_id=abc&q=machine+learning&model=gpt-4o-mini
+GET /api/recommendations?seed_video_id=abc&q=machine+learning&model=gpt-4o-mini
 ```
 
 | Param | Required | Description |
 |---|---|---|
-| `user_id` | No | Stable user identifier (UUID). Defaults to `"anonymous"`. |
 | `seed_video_id` | No | YouTube video ID to seed recommendations from |
 | `q` | No | Free-text search query |
 | `model` | No | Model ID from `models-list.ts`. Defaults to `gpt-4o-mini`. |
 
-**Rate limit:** 20 requests per minute per `user_id`. Returns `429` with `X-RateLimit-Remaining: 0` on breach.
+Identity is **not** a request param — it's resolved server-side from the Auth.js session cookie via `auth()`. Signed-in requests use `session.user.id` (the Google account's stable id) for personalization and history. Signed-out requests fall back to a shared `"guest"` identity (non-personalized, cache-shared across all guests).
+
+**Rate limit:** 20 requests per minute, keyed by `session.user.id` when signed in, or by IP address (`guest:<ip>`) when signed out — since guests have no verified identity to key on. Returns `429` with `X-RateLimit-Remaining: 0` on breach.
 
 ```typescript
 // Response shape
@@ -370,9 +373,10 @@ GET /api/recommendations?user_id=xyz&seed_video_id=abc&q=machine+learning&model=
 
 ### `POST /api/events`
 
+Requires an authenticated session — `user_id` is taken from `session.user.id`, not the request body. Signed-out requests no-op with `{ ok: true, skipped: true }` rather than erroring, since browsing without an account is supported.
+
 ```typescript
 {
-  "user_id": "string",
   "video_id": "string",
   "event_type": "click | watch | skip | like | dislike",  // validated server-side
   "watch_duration_seconds": number                         // optional
@@ -381,10 +385,11 @@ GET /api/recommendations?user_id=xyz&seed_video_id=abc&q=machine+learning&model=
 
 ### `POST /api/profile`
 
+Requires an authenticated session — returns `401` if signed out. `user_id` is taken from `session.user.id`.
+
 ```typescript
 // Seed a user's interest graph (e.g. onboarding topic selection)
 {
-  "user_id": "string",
   "interests": ["machine learning", "startups", "cooking"]
 }
 ```
@@ -396,6 +401,8 @@ Run once after deployment to create pgvector tables and IVFFlat index. Idempoten
 ---
 
 ## 8. Database Schema
+
+> `user_id` throughout this schema is the authenticated Google account id (`session.user.id` from Auth.js), or the literal string `"guest"` for non-personalized signed-out activity — not a client-generated UUID.
 
 ```mermaid
 erDiagram
@@ -576,6 +583,11 @@ VOYAGE_API_KEY=
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 POSTGRES_URL=
+
+# Required — Auth.js / Google OAuth sign-in
+AUTH_SECRET=
+AUTH_GOOGLE_ID=
+AUTH_GOOGLE_SECRET=
 
 # At least one provider required (gpt-4o-mini / OpenAI is the default)
 ANTHROPIC_API_KEY=
