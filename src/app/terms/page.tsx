@@ -34,7 +34,17 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">3. Prohibited Conduct</h2>
+            <h2 className="text-xl font-bold text-white mb-4">3. Accounts</h2>
+            <p>
+              You may browse and search SERENDEX without an account. Signing in with Google unlocks personalized
+              recommendations and watch history. You are responsible for maintaining the security of your Google
+              account; we rely on Google to authenticate you and do not receive or store your Google password.
+              We may suspend account access for conduct that violates these Terms.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">4. Prohibited Conduct</h2>
             <div className="space-y-4">
               <p>Users agree not to use the Service to:</p>
               <ul className="list-disc pl-6 space-y-2">
@@ -46,7 +56,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">4. Limitation of Liability</h2>
+            <h2 className="text-xl font-bold text-white mb-4">5. Limitation of Liability</h2>
             <p>
               SERENDEX provides recommendations "as is." We are not responsible for the content, quality, or availability of 
               third-party content (including YouTube videos) surfaced by our engine.
@@ -54,7 +64,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">5. Modifications</h2>
+            <h2 className="text-xl font-bold text-white mb-4">6. Modifications</h2>
             <p>
               We reserve the right to modify these terms at any time. Your continued use of the Service after such changes 
               constitutes your acceptance of the new Terms of Service.

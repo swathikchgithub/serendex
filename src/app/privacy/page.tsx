@@ -38,31 +38,54 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>
-                <strong>Device Information:</strong> We may store information on your device using cookies or similar technology
-                (such as LocalStorage) to remember your anonymous user ID and search preferences.
+                <strong>Account Information:</strong> If you sign in with Google, we receive your name, email address,
+                and profile photo from Google to identify you. This information is used only within your signed-in
+                session and is <strong>not</strong> written to our database — the only piece of your account we store
+                server-side is your Google account identifier, used as a key to link your interest graph and watch
+                history across visits.
               </li>
               <li>
                 <strong>API Data:</strong> We access and display public YouTube API Data (video titles, descriptions, thumbnails, and statistics).
-                We do not collect or store any private user data from your YouTube account.
+                We do not collect or store any private data from your YouTube account.
               </li>
               <li>
-                <strong>Interaction Data:</strong> We store anonymous logs of video "clicks" and "skips" within our app to train your local recommendation agent.
+                <strong>Interaction Data:</strong> If you're signed in, we log video "clicks," "watches," "likes," and "skips" against your account
+                to build your personalized interest graph. If you're signed out, this data is not recorded at all — you can browse
+                and search without an account, but recommendations won't be personalized.
               </li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">4. Data Sharing</h2>
+            <h2 className="text-xl font-bold text-white mb-4">4. Data Retention</h2>
             <p>
-              We do not sell or share your information with external parties. All data collected is used internally
-              to improve the AI-driven personalization of the SERENDEX engine.
+              Your interest graph and watch history are stored in our cache for <strong>7 days</strong> from your last
+              activity, after which they are automatically deleted. You can sign out at any time to end your session,
+              or contact us to request earlier deletion of your data.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">5. Contact Us</h2>
+            <h2 className="text-xl font-bold text-white mb-4">5. Data Sharing</h2>
             <p>
-              If you have any questions about this Privacy Policy, please contact us at:
+              We do not sell or share your information with external parties. All data collected is used internally
+              to improve the AI-driven personalization of the SERENDEX engine. Our use and transfer of information
+              received from Google APIs adheres to the{" "}
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                target="_blank"
+                className="text-violet-400 hover:underline"
+              >
+                Google API Services User Data Policy
+              </a>
+              , including the Limited Use requirements.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">6. Contact Us</h2>
+            <p>
+              If you have any questions about this Privacy Policy, or would like your data deleted, please contact us at:
               <br />
               <span className="text-white font-medium">swathikch@gmail.com</span>
             </p>
