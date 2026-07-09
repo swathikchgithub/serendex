@@ -28,8 +28,10 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold text-white mb-4">2. Description of Service</h2>
             <p>
-              SERENDEX is an AI-powered discovery engine for YouTube content. We provide supplemental analysis, 
-              topic categorization, and personalized recommendations based on public API data.
+              SERENDEX is a non-commercial, educational and technical demonstration project — an AI-powered discovery
+              engine for YouTube content. We provide supplemental analysis, topic categorization, and personalized
+              recommendations based on public API data. The Service is not operated for profit and does not display
+              advertising or sell user data.
             </p>
           </section>
 

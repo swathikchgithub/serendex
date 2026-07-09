@@ -11,8 +11,9 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold text-white mb-4">1. Overview</h2>
             <p>
-              SERENDEX ("we", "us", or "our") operates the website https://serendex.vercel.app.
-              This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service.
+              SERENDEX ("we", "us", or "our") operates the website https://serendex.vercel.app as a non-commercial,
+              educational and technical demonstration project. This page informs you of our policies regarding the
+              collection, use, and disclosure of personal data when you use our Service.
             </p>
           </section>
 
